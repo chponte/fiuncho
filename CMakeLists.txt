@@ -81,3 +81,6 @@ endif ()
 # Project sources
 add_subdirectory(src)
 add_subdirectory(app)
+# Project tests
+enable_testing()
+add_subdirectory(tests)
