@@ -26,8 +26,8 @@ class Search
 {
   public:
     virtual std::vector<Result<uint32_t, float>>
-    run(const Dataset<uint64_t> &dataset, Distributor<uint32_t> distributor,
-        const unsigned int outputs) = 0;
+    run(const Dataset<uint64_t> &dataset, const unsigned short order,
+        Distributor<uint32_t> distributor, const unsigned int outputs) = 0;
 };
 
 #endif

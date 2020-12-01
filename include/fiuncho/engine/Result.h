@@ -24,8 +24,8 @@
  * outputs with the result and the SNPs associated.
  */
 
-#ifndef FIUNCHO_MUTUALINFO_H
-#define FIUNCHO_MUTUALINFO_H
+#ifndef FIUNCHO_RESULT_H
+#define FIUNCHO_RESULT_H
 
 #include <cstring>
 #include <sstream>
@@ -36,16 +36,6 @@ template <typename U, typename V> class Result
   public:
     Result() : val(0) {}
 
-    Result(const std::vector<U> &combination, const V &val)
-        : combination(combination), val(val)
-    {
-    }
-
-    Result(const U *ptr, const size_t size, const V &val)
-        : combination(ptr, ptr + size), val(val)
-    {
-    }
-
     bool operator<(const Result &rhs) const { return val < rhs.val; }
 
     bool operator>(const Result &rhs) const { return rhs < *this; }
@@ -53,8 +43,6 @@ template <typename U, typename V> class Result
     bool operator<=(const Result &rhs) const { return !(rhs < *this); }
 
     bool operator>=(const Result &rhs) const { return !(*this < rhs); }
-
-    U &operator[](size_t pos) { return combination[pos]; }
 
     inline std::string str()
     {
@@ -87,7 +75,6 @@ template <typename U, typename V> class Result
         return is;
     }
 
-  private:
     std::vector<U> combination;
     V val;
 };

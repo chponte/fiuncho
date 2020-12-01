@@ -39,6 +39,8 @@ DEFINE_uint32(threads, std::thread::hardware_concurrency(),
               "number of threads to use");
 DECLARE_uint32(nout);
 
+DEFINE_uint32(order, 3, "combination order to explore");
+
 void read_file_names(const int &argc, char **const &argv, std::string &tped,
                      std::string &tfam, std::string &out)
 {
@@ -101,7 +103,8 @@ int main(int argc, char **argv)
     try {
         MPIEngine engine;
         auto results = engine.run<ThreadedSearch>(
-            tped, tfam, (unsigned int)FLAGS_nout, (unsigned int)FLAGS_threads);
+            tped, tfam, (unsigned int)FLAGS_order, (unsigned int)FLAGS_nout,
+            (unsigned int)FLAGS_threads);
         if (rank == 0) {
             // Write results to the output file
             std::ofstream of(out.c_str(), std::ios::out);

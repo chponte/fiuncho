@@ -45,7 +45,7 @@ class MPIEngine
     template <typename T, typename... Args>
     std::vector<Result<uint32_t, float>>
     run(const std::string &tped, const std::string &tfam,
-        const unsigned int outputs, Args &&... args)
+        const unsigned int order, const unsigned int outputs, Args &&... args)
     {
         std::vector<Result<uint32_t, float>> local_results, global_results;
 #ifdef BENCHMARK
@@ -63,7 +63,7 @@ class MPIEngine
         const Distributor<uint32_t> distributor(dataset.cases.size(), mpi_size,
                                                 mpi_rank);
         Search *search = new T(std::forward<Args>(args)...);
-        local_results = search->run(dataset, distributor, outputs);
+        local_results = search->run(dataset, order, distributor, outputs);
         delete search;
         // Serialize the results
         std::stringstream oss;

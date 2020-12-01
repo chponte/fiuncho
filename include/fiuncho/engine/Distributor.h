@@ -29,27 +29,76 @@
 
 #include <vector>
 
-template <typename T> class Distributor {
+template <typename T> class PairList
+{
+    std::pair<T, T> p;
+    T i, j, step;
+
+  public:
+    PairList(T i, T j, T offset, T step)
+        : p(std::make_pair<T, T>(offset / j, offset % j)), i(i), j(j),
+          step(step)
+    {
+    }
+
+    class iterator
+    {
+        PairList<T> *list;
+
+      public:
+        using value_type = T;
+        using reference = T;
+        using iterator_category = std::input_iterator_tag;
+        using pointer = T *;
+        using difference_type = void;
+
+        iterator(PairList *list) : list(list) {}
+
+        std::pair<T, T> operator*() const { return list->p; }
+        std::pair<T, T> *operator->() const { return &list->p; }
+
+        iterator &operator++()
+        { // preincrement
+            list->p.second += list->step;
+            while (list->p.first < list->i) {
+                while (list->p.second < list->j) {
+                    return *this;
+                }
+                list->p.first++;
+                list->p.second = list->p.first + 1 + (list->p.second % list->j);
+            }
+            this->list = nullptr;
+            return *this;
+        }
+
+        friend bool operator==(iterator const &lhs, iterator const &rhs)
+        {
+            return lhs.list == rhs.list;
+        }
+        friend bool operator!=(iterator const &lhs, iterator const &rhs)
+        {
+            return !(lhs == rhs);
+        }
+    };
+
+    iterator begin() { return iterator(this); }
+    iterator end() { return iterator(nullptr); }
+};
+
+template <typename T> class Distributor
+{
   public:
     Distributor(const T &size, const unsigned int &frac, const unsigned int &id)
         : size(size), frac(frac), id(id){};
 
-    Distributor<T> layer(const unsigned int &frac,
-                         const unsigned int &id) const {
+    Distributor<T> layer(const unsigned int &frac, const unsigned int &id) const
+    {
         return Distributor<T>(this->size, this->frac * frac,
                               this->id * frac + id);
     }
 
-    void get_pairs(std::vector<std::pair<T, T>> &pairs) const noexcept {
-        const size_t total_pairs = size * (size - 1) / 2;
-        T i, j, offset;
-        offset = id;
-        for (i = 0; i < size; i++) {
-            for (j = i + 1 + offset; j < size; j += frac) {
-                pairs.emplace_back(i, j);
-            }
-            offset = j - size;
-        }
+    PairList<T> get_pairs() const noexcept {
+        return PairList<T>(size, size, id, frac);
     }
 
   private:
