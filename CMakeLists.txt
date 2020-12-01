@@ -78,6 +78,8 @@ endif ()
 
 ############################# Project directories  #############################
 
+# Project documentation
+add_subdirectory(docs)
 # Project sources
 add_subdirectory(src)
 add_subdirectory(app)
