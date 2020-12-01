@@ -1,0 +1,43 @@
+branches:
+  only:
+    - master
+    - dev
+
+language: cpp
+
+os: linux
+
+dist: bionic
+
+git:
+  depth: false
+
+before_install:
+  - sudo apt-get -q update
+
+script:
+  - bash scripts/travis-build.sh
+
+# Build matrix
+jobs:
+  include:
+  # GCC + OpenMPI
+  - env: CC=/usr/bin/gcc-8 CXX=/usr/bin/g++-8
+    install:
+      - sudo apt-get -y install gcc-8 g++-8 cmake libopenmpi2 libopenmpi-dev
+    after_success: skip
+  # GCC + MPICH
+  - env: CC=/usr/bin/gcc-8 CXX=/usr/bin/g++-8
+    install:
+      - sudo apt-get -y install gcc-8 g++-8 cmake libmpich12 libmpich-dev
+    after_success: skip
+  # Clang + OpenMPI
+  - env: CC=/usr/bin/clang-10 CXX=/usr/bin/clang++-10 OMPI_CC=$CC OMPI_CXX=$CXX
+    install:
+      - sudo apt-get -y install clang-10 cmake libopenmpi2 libopenmpi-dev
+    after_success: skip
+  # Clang + MPICH
+  - env: CC=/usr/bin/clang-10 CXX=/usr/bin/clang++-10 MPICH_CC=$CC MPICH_CXX=$CXX
+    install:
+      - sudo apt-get -y install clang-10 cmake libmpich12 libmpich-dev
+    after_success: skip
