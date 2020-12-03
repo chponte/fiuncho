@@ -25,7 +25,6 @@
 
 #include <fiuncho/engine/Result.h>
 #include <fiuncho/engine/Search.h>
-#include <fiuncho/engine/ThreadedSearch.h>
 #include <mpi.h>
 #include <sstream>
 #include <vector>
@@ -53,7 +52,12 @@ class MPIEngine
         function_time = MPI_Wtime();
         dataset_time = MPI_Wtime();
 #endif
+#ifdef ALIGN
+        const Dataset<uint64_t> &dataset =
+            Dataset<uint64_t>::read<ALIGN>(tped, tfam);
+#else
         const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
+#endif
 #ifdef BENCHMARK
         dataset_time = MPI_Wtime() - dataset_time;
         std::cout << "Read " << dataset.cases.size() << " SNPs from "

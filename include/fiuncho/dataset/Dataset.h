@@ -61,6 +61,32 @@ template <class T> class Dataset
                          ctrls_words, ctrls_count));
     }
 
+    template <size_t N> static Dataset read(std::string tped, std::string tfam)
+    {
+        std::vector<Individual> individuals;
+        std::vector<SNP> snps;
+        size_t cases_count, ctrls_count;
+        read_individuals(tfam, individuals, cases_count, ctrls_count);
+        read_snps(tped, individuals, snps);
+        // Allocate enough space for representing all SNPs for all individuals
+        constexpr size_t NT = N / sizeof(T); // Number of T's in N bytes
+        constexpr size_t NBITS = N * 8;      // Number of bits in N bytes
+        const size_t cases_words = (cases_count + NBITS - 1) / NBITS * NT,
+                     ctrls_words = (ctrls_count + NBITS - 1) / NBITS * NT;
+        // Find the address of the first aligned position inside the allocation
+        T *alloc =
+            (T *)new T[(cases_words + ctrls_words) * 3 * snps.size() + NT];
+
+        T *ptr = ((T *)((((uintptr_t)alloc) + N - 1) / N * N));
+
+        std::vector<std::array<const T *, 3>> cases, ctrls;
+        populate(individuals, snps, ptr, cases_words, cases,
+                 ptr + cases_words * 3 * snps.size(), ctrls_words, ctrls);
+
+        return std::move(Dataset(alloc, cases, cases_words, cases_count, ctrls,
+                                 ctrls_words, ctrls_count));
+    }
+
     const size_t cases_words, cases_count, ctrls_words, ctrls_count, inds_count;
     const std::vector<std::array<const T *, 3>> cases, ctrls;
 
