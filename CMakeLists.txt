@@ -86,3 +86,5 @@ add_subdirectory(app)
 # Project tests
 enable_testing()
 add_subdirectory(tests)
+# Benchmark codes
+add_subdirectory(benchmarks EXCLUDE_FROM_ALL)
