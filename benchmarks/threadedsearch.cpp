@@ -82,7 +82,7 @@ void bench(const int tid, const std::string tped, const std::string tfam,
 #else
     const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
-    PairList<uint32_t> pairs(dataset.cases.size(), dataset.cases.size(), 0, 1);
+    PairList<uint32_t> pairs(dataset.snps, dataset.snps, 0, 1);
     MaxArray<Result<uint32_t, float>> maxarray(10);
 
     // Wait for all threads in order to start at the same time

@@ -30,12 +30,10 @@ project = 'fiuncho'
 copyright = '2020, Christian Ponte-Fernández'
 author = 'Christian Ponte-Fernández'
 
-# The long X.Y.Z version
-release = re.search(r'^project\s*\(.*VERSION\s*([\d.]*).*\)\s*$', 
-                    open('../CMakeLists.txt', 'r').read(),
-                    re.MULTILINE)[1]
-# The short X.Y version
-version = re.search(r'\d+\.\d+', release)[0]
+numeric_version = re.search(r'^project\s*\(.*VERSION\s*([^\s]*).*\)\s*$',
+                            open('../CMakeLists.txt', 'r').read(),
+                            re.MULTILINE)[1]
+version = f'v{numeric_version}'
 
 # -- General configuration ---------------------------------------------------
 

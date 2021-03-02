@@ -15,9 +15,9 @@
  * along with Fiuncho. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
 #include <bitset>
 #include <fiuncho/dataset/Dataset.h>
+#include <gtest/gtest.h>
 #include <string>
 
 std::string tped, tfam;
@@ -27,47 +27,50 @@ namespace
 TEST(DatasetTest, Dataset)
 {
 #ifdef ALIGN
-    const Dataset<uint64_t> &dataset =
+    const Dataset<uint64_t> dataset =
         Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-    const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
+    const Dataset<uint64_t> dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 
-    EXPECT_EQ(10, dataset.cases.size());
-    EXPECT_EQ(10, dataset.ctrls.size());
-    EXPECT_EQ(600, dataset.cases_count);
-    EXPECT_EQ(1300, dataset.ctrls_count);
-    EXPECT_EQ(1900, dataset.inds_count);
+    EXPECT_EQ(10, dataset.snps);
+    EXPECT_EQ(600, dataset.cases);
+    EXPECT_EQ(1300, dataset.ctrls);
+    EXPECT_EQ(1900, dataset.cases + dataset.ctrls);
 
 #if ALIGN == 64
-    EXPECT_EQ(16, dataset.cases_words);
-    EXPECT_EQ(24, dataset.ctrls_words);
+    EXPECT_EQ(16, dataset[0].cases_words);
+    EXPECT_EQ(24, dataset[0].ctrls_words);
 #elif ALIGN == 32
-    EXPECT_EQ(12, dataset.cases_words);
-    EXPECT_EQ(24, dataset.ctrls_words);
+    EXPECT_EQ(12, dataset[0].cases_words);
+    EXPECT_EQ(24, dataset[0].ctrls_words);
 #else
-    EXPECT_EQ(10, dataset.cases_words);
-    EXPECT_EQ(21, dataset.ctrls_words);
+    EXPECT_EQ(10, dataset[0].cases_words);
+    EXPECT_EQ(21, dataset[0].ctrls_words);
 #endif
 
-    for (auto i = 0; i < dataset.cases.size(); i++) {
+    for (auto i = 0; i < dataset.snps; i++) {
         int count = 0;
         for (auto j = 0; j < 3; j++) {
-            for (auto w = 0; w < dataset.cases_words; w++) {
-                count += std::bitset<64>(dataset.cases[i][j][w]).count();
+            for (auto w = 0; w < dataset[i].cases_words; w++) {
+                count += std::bitset<64>(
+                             dataset[i].cases[j * dataset[i].cases_words + w])
+                             .count();
             }
         }
-        EXPECT_EQ(dataset.cases_count, count);
+        EXPECT_EQ(dataset.cases, count);
     }
 
-    for (auto i = 0; i < dataset.ctrls.size(); i++) {
+    for (auto i = 0; i < dataset.snps; i++) {
         int count = 0;
         for (auto j = 0; j < 3; j++) {
-            for (auto w = 0; w < dataset.ctrls_words; w++) {
-                count += std::bitset<64>(dataset.ctrls[i][j][w]).count();
+            for (auto w = 0; w < dataset[i].ctrls_words; w++) {
+                count += std::bitset<64>(
+                             dataset[i].ctrls[j * dataset[i].ctrls_words + w])
+                             .count();
             }
         }
-        EXPECT_EQ(dataset.ctrls_count, count);
+        EXPECT_EQ(dataset.ctrls, count);
     }
 }
 } // namespace

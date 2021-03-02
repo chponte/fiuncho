@@ -130,17 +130,17 @@ class ThreadedSearch : public Search
     }
 
   private:
-    static void flat_exploration(const Dataset<uint64_t> &dataset,
+    static void flat_exploration(const Dataset<uint64_t> &d,
                                  PairList<uint32_t> &pairs,
                                  MaxArray<Result<uint32_t, float>> &maxarray)
     {
         std::vector<ContingencyTable<uint32_t>> ctables;
         ctables.reserve(BLOCK_SIZE);
         for (auto i = 0; i < BLOCK_SIZE; i++) {
-            ctables.emplace_back(2, dataset.cases_words, dataset.ctrls_words);
+            ctables.emplace_back(2, d[0].cases_words, d[0].ctrls_words);
         }
         uint32_t ids[BLOCK_SIZE * 2];
-        MutualInformation<float> mi(dataset.cases_count, dataset.ctrls_count);
+        MutualInformation<float> mi(d.cases, d.ctrls);
         Result<uint32_t, float> buffer;
         buffer.combination.resize(2);
 
@@ -150,10 +150,8 @@ class ThreadedSearch : public Search
             for (i = 0; i < BLOCK_SIZE && it != pairs.end(); i++, ++it) {
                 ids[i * 2] = it->first;
                 ids[i * 2 + 1] = it->second;
-                BitTable<uint64_t>::popcnt(
-                    dataset.cases[it->first][0], dataset.ctrls[it->first][0], 3,
-                    dataset.cases[it->second][0], dataset.ctrls[it->second][0],
-                    ctables[i]);
+                BitTable<uint64_t>::combine_and_popcnt(
+                    d[it->first], d[it->second], ctables[i]);
             }
             for (j = 0; j < i; j++) {
                 buffer.combination[0] = ids[j * 2];
@@ -164,7 +162,7 @@ class ThreadedSearch : public Search
         }
     }
 
-    static void depth_exploration(const Dataset<uint64_t> &dataset,
+    static void depth_exploration(const Dataset<uint64_t> &d,
                                   const unsigned short order,
                                   PairList<uint32_t> &pairs,
                                   MaxArray<Result<uint32_t, float>> &maxarray)
@@ -175,27 +173,26 @@ class ThreadedSearch : public Search
         } Combination;
         // Use a stack to explore combination space
         const size_t item_size = sizeof(Combination) + order * sizeof(uint32_t);
-        StaticStack<Combination> stack(item_size,
-                                       dataset.cases.size() * order - 2);
+        StaticStack<Combination> stack(item_size, d.snps * order - 2);
         Combination *cbuffer = (Combination *)new char[item_size];
+
         // Auxiliary bit tables for combinations sized under the target order
         std::vector<BitTable<uint64_t>> btables;
         for (auto o = 2; o < order; o++) {
-            btables.emplace_back(o, dataset.cases_words, dataset.ctrls_words);
+            btables.emplace_back(o, d[0].cases_words, d[0].ctrls_words);
         }
         // Vector of contingency tables (and their SNPs) for block processing
         std::vector<ContingencyTable<uint32_t>> ctables;
         for (auto i = 0; i < BLOCK_SIZE; i++) {
-            ctables.emplace_back(order, dataset.cases_words,
-                                 dataset.ctrls_words);
+            ctables.emplace_back(order, d[0].cases_words, d[0].ctrls_words);
         }
         uint32_t ids[BLOCK_SIZE * order];
 
-        MutualInformation<float> mi(dataset.cases_count, dataset.ctrls_count);
+        MutualInformation<float> mi(d.snps, d.snps);
         Result<uint32_t, float> rbuffer;
         rbuffer.combination.resize(order);
 
-        const auto data_lim = dataset.cases.size() - 1;
+        const auto data_lim = d.snps - 1;
         int i, j;
         auto it = pairs.begin();
         while (!(stack.empty() && it == pairs.end())) {
@@ -208,11 +205,8 @@ class ThreadedSearch : public Search
                     if (it == pairs.end()) {
                         break;
                     } else {
-                        BitTable<uint64_t>::fill(btables[0],
-                                                 dataset.cases[it->first][0],
-                                                 dataset.ctrls[it->first][0], 3,
-                                                 dataset.cases[it->second][0],
-                                                 dataset.ctrls[it->second][0]);
+                        BitTable<uint64_t>::combine(d[it->first], d[it->second],
+                                                    btables[0]);
                         cbuffer->size = 3;
                         cbuffer->pos[0] = it->first;
                         cbuffer->pos[1] = it->second;
@@ -232,17 +226,15 @@ class ThreadedSearch : public Search
                 const auto &s = cbuffer->pos[cbuffer->size - 1];
                 if (cbuffer->size == order) {
                     memcpy(ids + i * order, cbuffer->pos, order * 4);
-                    BitTable<uint64_t>::popcnt(prev.cases, prev.ctrls,
-                                               prev.size, dataset.cases[s][0],
-                                               dataset.ctrls[s][0], ctables[i]);
+                    BitTable<uint64_t>::combine_and_popcnt(prev, d[s],
+                                                           ctables[i]);
                     i++;
                 } else {
-                    BitTable<uint64_t>::fill(
-                        btables[cbuffer->size - 2], prev.cases, prev.ctrls,
-                        prev.size, dataset.cases[s][0], dataset.ctrls[s][0]);
+                    BitTable<uint64_t>::combine(prev, d[s],
+                                                btables[cbuffer->size - 2]);
                     cbuffer->size += 1;
-                    for (i = data_lim; i > s; i--) {
-                        cbuffer->pos[cbuffer->size - 1] = i;
+                    for (j = data_lim; j > s; j--) {
+                        cbuffer->pos[cbuffer->size - 1] = j;
                         stack.push(*cbuffer);
                     }
                 }

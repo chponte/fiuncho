@@ -15,10 +15,10 @@
  * along with Fiuncho. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
 #include <bitset>
 #include <fiuncho/engine/BitTable.h>
 #include <fiuncho/engine/ContingencyTable.h>
+#include <gtest/gtest.h>
 
 #ifdef ALIGN
 alignas(ALIGN)
@@ -90,6 +90,9 @@ alignas(ALIGN)
          0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff,
          0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
          0x0000000000000000}};
+
+BitTable<uint64_t> t1(cases1[0], 8, ctrls1[0], 16);
+BitTable<uint64_t> t2(cases2[0], 8, ctrls2[0], 16);
 
 namespace
 {
@@ -179,22 +182,21 @@ TEST(BitTableTest, fill)
          0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
          0x0000000000000000}};
 
-    BitTable<uint64_t> btable(2, 8, 16);
+    BitTable<uint64_t> result(2, 8, 16);
 
-    EXPECT_EQ(9, btable.size);
-    EXPECT_EQ(8, btable.cases_words);
-    EXPECT_EQ(16, btable.ctrls_words);
+    EXPECT_EQ(9, result.size);
+    EXPECT_EQ(8, result.cases_words);
+    EXPECT_EQ(16, result.ctrls_words);
 
-    BitTable<uint64_t>::fill(btable, cases1[0], ctrls1[0], 3, cases2[0],
-                             ctrls2[0]);
+    BitTable<uint64_t>::combine(t1, t2, result);
 
-    for (auto i = 0; i < btable.size; i++) {
-        for (auto j = 0; j < btable.cases_words; j++) {
-            EXPECT_TRUE(btable.cases[i * btable.cases_words + j] ==
+    for (auto i = 0; i < result.size; i++) {
+        for (auto j = 0; j < result.cases_words; j++) {
+            EXPECT_TRUE(result.cases[i * result.cases_words + j] ==
                         res_cases[i][j]);
         }
-        for (auto j = 0; j < btable.ctrls_words; j++) {
-            EXPECT_TRUE(btable.ctrls[i * btable.ctrls_words + j] ==
+        for (auto j = 0; j < result.ctrls_words; j++) {
+            EXPECT_TRUE(result.ctrls[i * result.ctrls_words + j] ==
                         res_ctrls[i][j]);
         }
     }
@@ -215,8 +217,7 @@ TEST(BitTableTest, popcnt)
     EXPECT_EQ(8, ctable.cases_words);
     EXPECT_EQ(16, ctable.ctrls_words);
 
-    BitTable<uint64_t>::popcnt(cases1[0], ctrls1[0], 3, cases2[0], ctrls2[0],
-                               ctable);
+    BitTable<uint64_t>::combine_and_popcnt(t1, t2, ctable);
 
     for (auto i = 0; i < 9; i++) {
         EXPECT_EQ(ctable.cases[i], popcnt_cases[i]);

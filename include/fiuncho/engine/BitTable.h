@@ -10,21 +10,24 @@
 template <class T> class BitTable
 {
   public:
+    BitTable(T *cases, const size_t cases_words, T *ctrls,
+             const size_t ctrls_words)
+        : order(1), size(3), cases(cases), cases_words(cases_words),
+          ctrls(ctrls), ctrls_words(ctrls_words), alloc(nullptr){};
+
     BitTable(const short order, const size_t cases_words,
              const size_t ctrls_words);
 
-    static void fill(BitTable<T> &t, const uint64_t *cases1,
-                     const uint64_t *ctrls1, const size_t size1,
-                     const uint64_t *cases2, const uint64_t *ctrls2) noexcept;
+    static void combine(const BitTable<T> &t1, const BitTable<T> &t2,
+                        BitTable<T> &out) noexcept;
 
     template <class U>
-    static void popcnt(const uint64_t *cases1, const uint64_t *ctrls1,
-                       const size_t size1, const uint64_t *cases2,
-                       const uint64_t *ctrls2, ContingencyTable<U> &t) noexcept;
+    static void combine_and_popcnt(const BitTable<T> &t1, const BitTable<T> &t2,
+                                   ContingencyTable<U> &out) noexcept;
 
     const size_t order, size, cases_words, ctrls_words;
 
-  private:  
+  private:
     std::unique_ptr<T[]> alloc;
 
   public:

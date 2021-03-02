@@ -23,6 +23,9 @@
  * @brief Search class definition.
  */
 
+#ifndef FIUNCHO_MPIENGINE_H
+#define FIUNCHO_MPIENGINE_H
+
 #include <fiuncho/engine/Result.h>
 #include <fiuncho/engine/Search.h>
 #include <mpi.h>
@@ -33,9 +36,6 @@
 #include <iostream>
 #endif
 
-#ifndef FIUNCHO_MPIENGINE_H
-#define FIUNCHO_MPIENGINE_H
-
 class MPIEngine
 {
   public:
@@ -44,7 +44,7 @@ class MPIEngine
     template <typename T, typename... Args>
     std::vector<Result<uint32_t, float>>
     run(const std::string &tped, const std::string &tfam,
-        const unsigned int order, const unsigned int outputs, Args &&... args)
+        const unsigned int order, const unsigned int outputs, Args &&...args)
     {
         std::vector<Result<uint32_t, float>> local_results, global_results;
 #ifdef BENCHMARK
@@ -53,10 +53,10 @@ class MPIEngine
         dataset_time = MPI_Wtime();
 #endif
 #ifdef ALIGN
-        const Dataset<uint64_t> &dataset =
+        const Dataset<uint64_t> dataset =
             Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-        const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
+        auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 #ifdef BENCHMARK
         dataset_time = MPI_Wtime() - dataset_time;
@@ -64,7 +64,7 @@ class MPIEngine
                   << dataset.inds_count << " individuals in " << dataset_time
                   << " seconds\n";
 #endif
-        const Distributor<uint32_t> distributor(dataset.cases.size(), mpi_size,
+        const Distributor<uint32_t> distributor(dataset.snps, mpi_size,
                                                 mpi_rank);
         Search *search = new T(std::forward<Args>(args)...);
         local_results = search->run(dataset, order, distributor, outputs);

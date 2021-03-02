@@ -17,67 +17,66 @@ BitTable<uint64_t>::BitTable(const short order, const size_t cases_words,
 }
 
 template <>
-void BitTable<uint64_t>::fill(BitTable<uint64_t> &t, const uint64_t *cases1,
-                              const uint64_t *ctrls1, const size_t size1,
-                              const uint64_t *cases2,
-                              const uint64_t *ctrls2) noexcept
+void BitTable<uint64_t>::combine(const BitTable<uint64_t> &t1,
+                                 const BitTable<uint64_t> &t2,
+                                 BitTable<uint64_t> &out) noexcept
 {
     size_t i, j, k;
     // Compute bit tables for cases
-    for (i = 0; i < size1; i += 3) {
+    for (i = 0; i < t1.size; i += 3) {
         for (j = 0; j < 3; j++) {
-            for (k = 0; k < t.cases_words; k += WIDTH) {
+            for (k = 0; k < t1.cases_words; k += WIDTH) {
                 __m256i y0 = _mm256_load_si256(
-                    (__m256i *)(cases2 + j * t.cases_words + k));
+                    (__m256i *)(t2.cases + j * t1.cases_words + k));
                 __m256i y1 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 0) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 0) * t1.cases_words + k));
                 __m256i y2 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 1) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 1) * t1.cases_words + k));
                 __m256i y3 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 2) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 2) * t1.cases_words + k));
                 __m256i y4 = _mm256_and_si256(y0, y1);
                 __m256i y5 = _mm256_and_si256(y0, y2);
                 __m256i y6 = _mm256_and_si256(y0, y3);
                 _mm256_store_si256(
-                    (__m256i *)(t.cases + ((i + j) * 3 + 0) * t.cases_words +
+                    (__m256i *)(out.cases + ((i + j) * 3 + 0) * t1.cases_words +
                                 k),
                     y4);
                 _mm256_store_si256(
-                    (__m256i *)(t.cases + ((i + j) * 3 + 1) * t.cases_words +
+                    (__m256i *)(out.cases + ((i + j) * 3 + 1) * t1.cases_words +
                                 k),
                     y5);
                 _mm256_store_si256(
-                    (__m256i *)(t.cases + ((i + j) * 3 + 2) * t.cases_words +
+                    (__m256i *)(out.cases + ((i + j) * 3 + 2) * t1.cases_words +
                                 k),
                     y6);
             }
         }
     }
     // Compute bit tables for ctrls
-    for (i = 0; i < size1; i += 3) {
+    for (i = 0; i < t1.size; i += 3) {
         for (j = 0; j < 3; j++) {
-            for (k = 0; k < t.ctrls_words; k += WIDTH) {
+            for (k = 0; k < t1.ctrls_words; k += WIDTH) {
                 __m256i y0 = _mm256_load_si256(
-                    (__m256i *)(ctrls2 + j * t.ctrls_words + k));
+                    (__m256i *)(t2.ctrls + j * t1.ctrls_words + k));
                 __m256i y1 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 0) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 0) * t1.ctrls_words + k));
                 __m256i y2 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 1) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 1) * t1.ctrls_words + k));
                 __m256i y3 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 2) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 2) * t1.ctrls_words + k));
                 __m256i y4 = _mm256_and_si256(y0, y1);
                 __m256i y5 = _mm256_and_si256(y0, y2);
                 __m256i y6 = _mm256_and_si256(y0, y3);
                 _mm256_store_si256(
-                    (__m256i *)(t.ctrls + ((i + j) * 3 + 0) * t.ctrls_words +
+                    (__m256i *)(out.ctrls + ((i + j) * 3 + 0) * t1.ctrls_words +
                                 k),
                     y4);
                 _mm256_store_si256(
-                    (__m256i *)(t.ctrls + ((i + j) * 3 + 1) * t.ctrls_words +
+                    (__m256i *)(out.ctrls + ((i + j) * 3 + 1) * t1.ctrls_words +
                                 k),
                     y5);
                 _mm256_store_si256(
-                    (__m256i *)(t.ctrls + ((i + j) * 3 + 2) * t.ctrls_words +
+                    (__m256i *)(out.ctrls + ((i + j) * 3 + 2) * t1.ctrls_words +
                                 k),
                     y6);
             }
@@ -87,68 +86,67 @@ void BitTable<uint64_t>::fill(BitTable<uint64_t> &t, const uint64_t *cases1,
 
 template <>
 template <>
-void BitTable<uint64_t>::popcnt(const uint64_t *cases1, const uint64_t *ctrls1,
-                                const size_t size1, const uint64_t *cases2,
-                                const uint64_t *ctrls2,
-                                ContingencyTable<uint32_t> &t) noexcept
+void BitTable<uint64_t>::combine_and_popcnt(
+    const BitTable<uint64_t> &t1, const BitTable<uint64_t> &t2,
+    ContingencyTable<uint32_t> &out) noexcept
 {
     size_t i, j, k;
     // Set tables to 0
-    for (i = 0; i < t.size; i++) {
-        t.cases[i] = 0;
-        t.ctrls[i] = 0;
+    for (i = 0; i < out.size; i++) {
+        out.cases[i] = 0;
+        out.ctrls[i] = 0;
     }
     // Compute count tables for cases
-    for (i = 0; i < size1; i += 3) {
+    for (i = 0; i < t1.size; i += 3) {
         for (j = 0; j < 3; j++) {
-            for (k = 0; k < t.cases_words; k += WIDTH) {
+            for (k = 0; k < t1.cases_words; k += WIDTH) {
                 __m256i y0 = _mm256_load_si256(
-                    (__m256i *)(cases2 + j * t.cases_words + k));
+                    (__m256i *)(t2.cases + j * t1.cases_words + k));
                 __m256i y1 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 0) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 0) * t1.cases_words + k));
                 __m256i y2 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 1) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 1) * t1.cases_words + k));
                 __m256i y3 = _mm256_load_si256(
-                    (__m256i *)(cases1 + (i + 2) * t.cases_words + k));
+                    (__m256i *)(t1.cases + (i + 2) * t1.cases_words + k));
                 __m256i y4 = _mm256_and_si256(y0, y1);
                 __m256i y5 = _mm256_and_si256(y0, y2);
                 __m256i y6 = _mm256_and_si256(y0, y3);
-                t.cases[(i + j) * 3 + 0] += _popcnt64(y4[0]) +
-                                            _popcnt64(y4[1]) +
-                                            _popcnt64(y4[2]) + _popcnt64(y4[3]);
-                t.cases[(i + j) * 3 + 1] += _popcnt64(y5[0]) +
-                                            _popcnt64(y5[1]) +
-                                            _popcnt64(y5[2]) + _popcnt64(y5[3]);
-                t.cases[(i + j) * 3 + 2] += _popcnt64(y6[0]) +
-                                            _popcnt64(y6[1]) +
-                                            _popcnt64(y6[2]) + _popcnt64(y6[3]);
+                out.cases[(i + j) * 3 + 0] +=
+                    _popcnt64(y4[0]) + _popcnt64(y4[1]) + _popcnt64(y4[2]) +
+                    _popcnt64(y4[3]);
+                out.cases[(i + j) * 3 + 1] +=
+                    _popcnt64(y5[0]) + _popcnt64(y5[1]) + _popcnt64(y5[2]) +
+                    _popcnt64(y5[3]);
+                out.cases[(i + j) * 3 + 2] +=
+                    _popcnt64(y6[0]) + _popcnt64(y6[1]) + _popcnt64(y6[2]) +
+                    _popcnt64(y6[3]);
             }
         }
     }
     // Compute count tables for ctrls
-    for (i = 0; i < size1; i += 3) {
+    for (i = 0; i < t1.size; i += 3) {
         for (j = 0; j < 3; j++) {
-            for (k = 0; k < t.ctrls_words; k += WIDTH) {
+            for (k = 0; k < t1.ctrls_words; k += WIDTH) {
                 __m256i y0 = _mm256_load_si256(
-                    (__m256i *)(ctrls2 + j * t.ctrls_words + k));
+                    (__m256i *)(t2.ctrls + j * t1.ctrls_words + k));
                 __m256i y1 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 0) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 0) * t1.ctrls_words + k));
                 __m256i y2 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 1) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 1) * t1.ctrls_words + k));
                 __m256i y3 = _mm256_load_si256(
-                    (__m256i *)(ctrls1 + (i + 2) * t.ctrls_words + k));
+                    (__m256i *)(t1.ctrls + (i + 2) * t1.ctrls_words + k));
                 __m256i y4 = _mm256_and_si256(y0, y1);
                 __m256i y5 = _mm256_and_si256(y0, y2);
                 __m256i y6 = _mm256_and_si256(y0, y3);
-                t.ctrls[(i + j) * 3 + 0] += _popcnt64(y4[0]) +
-                                            _popcnt64(y4[1]) +
-                                            _popcnt64(y4[2]) + _popcnt64(y4[3]);
-                t.ctrls[(i + j) * 3 + 1] += _popcnt64(y5[0]) +
-                                            _popcnt64(y5[1]) +
-                                            _popcnt64(y5[2]) + _popcnt64(y5[3]);
-                t.ctrls[(i + j) * 3 + 2] += _popcnt64(y6[0]) +
-                                            _popcnt64(y6[1]) +
-                                            _popcnt64(y6[2]) + _popcnt64(y6[3]);
+                out.ctrls[(i + j) * 3 + 0] +=
+                    _popcnt64(y4[0]) + _popcnt64(y4[1]) + _popcnt64(y4[2]) +
+                    _popcnt64(y4[3]);
+                out.ctrls[(i + j) * 3 + 1] +=
+                    _popcnt64(y5[0]) + _popcnt64(y5[1]) + _popcnt64(y5[2]) +
+                    _popcnt64(y5[3]);
+                out.ctrls[(i + j) * 3 + 2] +=
+                    _popcnt64(y6[0]) + _popcnt64(y6[1]) + _popcnt64(y6[2]) +
+                    _popcnt64(y6[3]);
             }
         }
     }

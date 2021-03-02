@@ -30,6 +30,7 @@
 #include <array>
 #include <fiuncho/dataset/Individual.h>
 #include <fiuncho/dataset/SNP.h>
+#include <fiuncho/engine/BitTable.h>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -38,7 +39,13 @@
 template <class T> class Dataset
 {
   public:
-    static Dataset read(std::string tped, std::string tfam)
+    BitTable<T> &operator[](int i) { return table_vector[i]; }
+
+    const BitTable<T> &operator[](int i) const { return table_vector[i]; }
+
+    std::vector<BitTable<T>> &data() { return table_vector; }
+
+    static Dataset<T> read(std::string tped, std::string tfam)
     {
         std::vector<Individual> individuals;
         std::vector<SNP> snps;
@@ -50,18 +57,17 @@ template <class T> class Dataset
         const size_t cases_words = (cases_count + NBITS - 1) / NBITS,
                      ctrls_words = (ctrls_count + NBITS - 1) / NBITS;
         // Find the address of the first aligned position inside the allocation
-        T *alloc =
-            (T *)new T[(cases_words + ctrls_words) * 3 * snps.size()];
+        T *alloc = (T *)new T[(cases_words + ctrls_words) * 3 * snps.size()];
 
-        std::vector<std::array<const T *, 3>> cases, ctrls;
-        populate(individuals, snps, alloc, cases_words, cases,
-                 alloc + cases_words * 3 * snps.size(), ctrls_words, ctrls);
+        Dataset<uint64_t> d(alloc, cases_count, ctrls_count, snps.size());
+        populate(individuals, snps, alloc, d.table_vector, cases_words,
+                 ctrls_words);
 
-        return std::move(Dataset(alloc, cases, cases_words, cases_count, ctrls,
-                         ctrls_words, ctrls_count));
+        return std::move(d);
     }
 
-    template <size_t N> static Dataset read(std::string tped, std::string tfam)
+    template <size_t N>
+    static Dataset<T> read(std::string tped, std::string tfam)
     {
         std::vector<Individual> individuals;
         std::vector<SNP> snps;
@@ -79,25 +85,19 @@ template <class T> class Dataset
 
         T *ptr = ((T *)((((uintptr_t)alloc) + N - 1) / N * N));
 
-        std::vector<std::array<const T *, 3>> cases, ctrls;
-        populate(individuals, snps, ptr, cases_words, cases,
-                 ptr + cases_words * 3 * snps.size(), ctrls_words, ctrls);
+        Dataset<uint64_t> d(alloc, cases_count, ctrls_count, snps.size());
+        populate(individuals, snps, ptr, d.table_vector, cases_words,
+                 ctrls_words);
 
-        return std::move(Dataset(alloc, cases, cases_words, cases_count, ctrls,
-                                 ctrls_words, ctrls_count));
+        return std::move(d);
     }
 
-    const size_t cases_words, cases_count, ctrls_words, ctrls_count, inds_count;
-    const std::vector<std::array<const T *, 3>> cases, ctrls;
+    const size_t cases, ctrls, snps;
+    std::vector<BitTable<T>> table_vector;
 
   private:
-    Dataset(T *alloc, std::vector<std::array<const T *, 3>> cases,
-            size_t cases_words, size_t cases_count,
-            std::vector<std::array<const T *, 3>> ctrls, size_t ctrls_words,
-            size_t ctrls_count)
-        : alloc(alloc), cases(cases), cases_words(cases_words),
-          cases_count(cases_count), ctrls(ctrls), ctrls_words(ctrls_words),
-          ctrls_count(ctrls_count), inds_count(cases_count + ctrls_count)
+    Dataset(T *ptr, size_t cases_count, size_t ctrls_count, size_t snps_count)
+        : cases(cases_count), ctrls(ctrls_count), snps(snps_count), alloc(ptr)
     {
     }
 
@@ -159,55 +159,93 @@ template <class T> class Dataset
     }
 
     inline static void populate(const std::vector<Individual> &inds,
-                                const std::vector<SNP> &snps, T *cases_ptr,
+                                const std::vector<SNP> &snps, T *ptr,
+                                std::vector<BitTable<T>> &data,
                                 const size_t cases_words,
-                                std::vector<std::array<const T *, 3>> &cases,
-                                T *ctrls_ptr, const size_t ctrls_words,
-                                std::vector<std::array<const T *, 3>> &ctrls)
+                                const size_t ctrls_words)
     {
         constexpr size_t BITS = sizeof(T) * 8; // Number of bits in T
+
         // Buffers
-        T *cases_buff[3], *ctrls_buff[3];
-        size_t cases_cnt, ctrls_cnt;
+        T cases_buff[3], ctrls_buff[3];
+        data.reserve(snps.size());
         for (auto i = 0; i < snps.size(); i++) {
-            // Initialize buffers
-            cases_cnt = 0;
-            ctrls_cnt = 0;
-            for (auto j = 0; j < 3; j++) {
-                cases_buff[j] = cases_ptr + cases_words * j;
-                for (auto k = 0; k < cases_words; k++) {
-                    cases_buff[j][k] = 0;
-                }
+            // Clear buffers
+            for (auto k = 0; k < 3; k++) {
+                ctrls_buff[k] = 0;
+                cases_buff[k] = 0;
             }
-            cases_ptr += 3 * cases_words;
-            for (auto j = 0; j < 3; j++) {
-                ctrls_buff[j] = ctrls_ptr + ctrls_words * j;
-                for (auto k = 0; k < ctrls_words; k++) {
-                    ctrls_buff[j][k] = 0;
-                }
-            }
-            ctrls_ptr += 3 * ctrls_words;
+
+            // Create bit table for each SNP
+            data.push_back(BitTable<T>(ptr, cases_words, ptr + 3 * cases_words,
+                                       ctrls_words));
+            ptr += 3 * cases_words + 3 * ctrls_words;
+            auto &table = data.back();
+            // Populate bit table with the snp information
+            size_t cases_cnt = 0;
+            size_t ctrls_cnt = 0;
             for (auto j = 0; j < inds.size(); j++) {
-                if (inds[j].ph == 1) {
+                // For each individual, check phenotype class
+                if (inds[j].ph == 1) { // If it's a control append genotype to
+                                       // the 3 control buffers
                     for (auto k = 0; k < 3; k++) {
-                        ctrls_buff[k][ctrls_cnt / BITS] =
-                            (ctrls_buff[k][ctrls_cnt / BITS] << 1) +
-                            (snps[i].genotypes[j] == k);
+                        ctrls_buff[k] =
+                            (ctrls_buff[k] << 1) + (snps[i].genotypes[j] == k);
                     }
                     ctrls_cnt++;
-                } else {
+                } else { // Else append genotype to the 3 cases buffers
                     for (auto k = 0; k < 3; k++) {
-                        cases_buff[k][cases_cnt / BITS] =
-                            (cases_buff[k][cases_cnt / BITS] << 1) +
-                            (snps[i].genotypes[j] == k);
+                        cases_buff[k] =
+                            (cases_buff[k] << 1) + (snps[i].genotypes[j] == k);
                     }
                     cases_cnt++;
                 }
+                // If the buffer is full, write buffer into the bit table and
+                // clear the buffer
+                if (cases_cnt % BITS == 0) {
+                    const int offset = cases_cnt / BITS - 1;
+                    for (auto k = 0; k < 3; k++) {
+                        table.cases[k * cases_words + offset] = cases_buff[k];
+                        cases_buff[k] = 0;
+                    }
+                }
+                // Do the same for controls
+                if (ctrls_cnt % BITS == 0) {
+                    const int offset = ctrls_cnt / BITS - 1;
+                    for (auto k = 0; k < 3; k++) {
+                        table.ctrls[k * ctrls_words + offset] = ctrls_buff[k];
+                        ctrls_buff[k] = 0;
+                    }
+                }
             }
-            cases.emplace_back(std::array<const T *, 3>{
-                cases_buff[0], cases_buff[1], cases_buff[2]});
-            ctrls.emplace_back(std::array<const T *, 3>{
-                ctrls_buff[0], ctrls_buff[1], ctrls_buff[2]});
+            // If the number of controls is not divisible by the bits in T
+            if (ctrls_cnt % BITS != 0) {
+                // Write last (incomplete) word from each row of the table
+                const int offset = ctrls_cnt / BITS;
+                for (auto k = 0; k < 3; k++) {
+                    table.ctrls[k * ctrls_words + offset] = ctrls_buff[k];
+                }
+            }
+            // Repeat for cases
+            if (cases_cnt % BITS != 0) {
+                const int offset = cases_cnt / BITS;
+                for (auto k = 0; k < 3; k++) {
+                    table.cases[k * cases_words + offset] = cases_buff[k];
+                }
+            }
+            // Write 0 in the remaining uninitialized words of the controls
+            // array
+            for (auto i = (ctrls_cnt + BITS - 1) / BITS; i < ctrls_words; i++) {
+                for (auto k = 0; k < 3; k++) {
+                    table.ctrls[k * ctrls_words + i] = 0;
+                }
+            }
+            // Repeat for cases
+            for (auto i = (cases_cnt + BITS - 1) / BITS; i < cases_words; i++) {
+                for (auto k = 0; k < 3; k++) {
+                    table.cases[k * cases_words + i] = 0;
+                }
+            }
         }
     }
 
