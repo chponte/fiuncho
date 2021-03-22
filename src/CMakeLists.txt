@@ -26,6 +26,7 @@ if (NOT TARGET MPI::MPI_CXX)
 endif()
 
 find_package(AVX)
+find_package(VectorLib)
 
 ################################# Definitions  #################################
 
@@ -36,61 +37,83 @@ set(SOURCE_LIST_BASE
     "${PROJECT_SOURCE_DIR}/src/cpu/base/BitTable.cpp"
     "${PROJECT_SOURCE_DIR}/src/cpu/base/ContingencyTable.cpp"
     "${PROJECT_SOURCE_DIR}/src/cpu/base/MutualInformation.cpp")
-set(SOURCE_LIST_256_AVX2
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx2/BitTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx2/ContingencyTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx2/MutualInformation.cpp")
-set(SOURCE_LIST_256_AVX512BW
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx2/BitTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx2/ContingencyTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/256_avx512bw/MutualInformation.cpp")
-set(SOURCE_LIST_512_AVX512BW
-    "${PROJECT_SOURCE_DIR}/src/cpu/512_avx512bw/BitTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/512_avx512bw/ContingencyTable.cpp"
-    "${PROJECT_SOURCE_DIR}/src/cpu/512_avx512bw/MutualInformation.cpp")
+set(SOURCE_LIST_AVX2
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx2/BitTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx2/ContingencyTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx2/MutualInformation.cpp")
+set(SOURCE_LIST_AVX512F256
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx2/BitTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx2/ContingencyTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx512f256/MutualInformation.cpp")
+set(SOURCE_LIST_AVX512F512
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx512f512/BitTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx512f512/ContingencyTable.cpp"
+    "${PROJECT_SOURCE_DIR}/src/cpu/avx512f512/MutualInformation.cpp")
 
 ################################ Configuration  ################################
-
-# AVX operation width
-if ((AVX512BW_ENABLED OR AVX2_ENABLED) AND NOT DEFINED AVX_WIDTH)
-    set(AVX_WIDTH 256 CACHE STRING "Preferred AVX operation width" FORCE)
-    set_property(CACHE AVX_WIDTH PROPERTY STRINGS "256" "512")
-endif()
-
-################################### Targets  ###################################
 
 configure_file(${PROJECT_SOURCE_DIR}/include/fiuncho/Definitions.h.in
     ${PROJECT_BINARY_DIR}/include/fiuncho/Definitions.h)
 
-if(AVX512BW_ENABLED)
-    if(AVX_WIDTH EQUAL 256)
-        add_library(libfiuncho
-            ${SOURCE_LIST}
-            ${SOURCE_LIST_256_AVX512BW})
-        target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
-    elseif(AVX_WIDTH EQUAL 512)
-        add_library(libfiuncho
-            ${SOURCE_LIST}
-            ${SOURCE_LIST_512_AVX512BW})
-        target_compile_options(libfiuncho PUBLIC "-DALIGN=64")
-    else()
-        message(FATAL_ERROR "Invalid AVX operation width")
+################################### Targets  ###################################
+
+if(FORCE_AVX512F512)
+    if(NOT AVX512F_ENABLED)
+        message(FATAL_ERROR "FORCE_AVX512F512 is ${FORCE_AVX512F512}, "
+            "but AVX512F is not available")
     endif()
-elseif(AVX2_ENABLED)
-    if(AVX_WIDTH EQUAL 256)
-        add_library(libfiuncho
-            ${SOURCE_LIST}
-            ${SOURCE_LIST_256_AVX2})
-        target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
-    else()
-        message(FATAL_ERROR "Invalid AVX operation width, note that only AVX2 "
-        "was enabled during compilation")
+    if (NOT (SVML_AVAILABLE OR LIBMVEC_AVAILABLE))
+        message(FATAL_ERROR "FORCE_AVX512F512 is ${FORCE_AVX512F512}, "
+            "but there is no math vector library available")
     endif()
-else()
+    add_library(libfiuncho
+        ${SOURCE_LIST}
+        ${SOURCE_LIST_AVX512F512})
+    target_compile_options(libfiuncho PUBLIC "-DALIGN=64")
+elseif(FORCE_AVX512F256)
+    if(NOT AVX512F_ENABLED)
+        message(FATAL_ERROR "FORCE_AVX512F256 is ${FORCE_AVX512F256}, "
+            "but AVX512F is not available")
+    endif()
+    if (NOT (SVML_AVAILABLE OR LIBMVEC_AVAILABLE))
+        message(FATAL_ERROR "FORCE_AVX512F256 is ${FORCE_AVX512F256}, "
+            "but there is no math vector library available")
+    endif()
+    add_library(libfiuncho
+        ${SOURCE_LIST}
+        ${SOURCE_LIST_AVX512F256})
+    target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
+elseif(FORCE_AVX2)
+    if(NOT AVX2_ENABLED)
+        message(FATAL_ERROR "FORCE_AVX2 is ${$FORCE_AVX2}, "
+            "but AVX2 is not available")
+    endif()
+    if (NOT (SVML_AVAILABLE OR LIBMVEC_AVAILABLE))
+        message(FATAL_ERROR "FORCE_AVX2 is ${FORCE_AVX2}, "
+            "but there is no math vector library available")
+    endif()
+    add_library(libfiuncho
+        ${SOURCE_LIST}
+        ${SOURCE_LIST_AVX2})
+    target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
+elseif(FORCE_NOAVX)
     add_library(libfiuncho
         ${SOURCE_LIST}
         ${SOURCE_LIST_BASE})
     target_compile_options(libfiuncho PUBLIC)
+else()
+    # Default behaviour: use AVX2 if its available
+    if (AVX2_ENABLED AND (SVML_AVAILABLE OR LIBMVEC_AVAILABLE))
+        add_library(libfiuncho
+            ${SOURCE_LIST}
+            ${SOURCE_LIST_AVX2})
+        target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
+    else()
+        add_library(libfiuncho
+            ${SOURCE_LIST}
+            ${SOURCE_LIST_BASE})
+        target_compile_options(libfiuncho PUBLIC)
+    endif()
 endif()
 
 target_include_directories(libfiuncho PUBLIC

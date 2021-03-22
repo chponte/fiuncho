@@ -8,7 +8,7 @@ targets="westmere haswell skylake-avx512"
 for t in $(echo $targets); do
     mkdir -p ${TRAVIS_BUILD_DIR}/build/$t
     cd ${TRAVIS_BUILD_DIR}/build/$t
-    CFLAGS="-march=$t -mtune=$t" CXXFLAGS=$CFLAGS \
+    CFLAGS="-O3 -march=$t -mtune=$t" CXXFLAGS=$CFLAGS \
             cmake -DCMAKE_BUILD_TYPE=Release \
             ${TRAVIS_BUILD_DIR}
     make all

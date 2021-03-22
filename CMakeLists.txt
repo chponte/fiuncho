@@ -30,34 +30,33 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 # GNU
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS_DEBUG
-        "-DDEBUG -g -fverbose-asm -O1 -Wall -Wextra -Wpedantic")
+        "-DDEBUG -g -fverbose-asm -Wall -Wextra -Wpedantic")
     set(CMAKE_CXX_FLAGS_RELEASE
-        "-DNDEBUG -O3")
+        "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK -O3")
+        "-DNDEBUG -DBENCHMARK")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g -fverbose-asm -O3")
+        "-DDEBUG -g")
 # Intel
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     set(CMAKE_CXX_FLAGS_DEBUG
-        "-DDEBUG -g -debug inline-debug-info -O1 -Wall")
+        "-DDEBUG -g -debug inline-debug-info -Wall -qopt-report=5")
     set(CMAKE_CXX_FLAGS_RELEASE
-        "-DNDEBUG -O3")
+        "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK -O3")
+        "-DNDEBUG -DBENCHMARK")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g -debug inline-debug-info -qopt-report=5 -O3")
+        "-DDEBUG -g")
 # Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS_DEBUG
-        "-DDEBUG -g -fverbose-asm -O1 -Wall -Wextra\
-        -Wpedantic")
+        "-DDEBUG -g -fverbose-asm -Wall -Wextra -Wpedantic")
     set(CMAKE_CXX_FLAGS_RELEASE
-        "-DNDEBUG -O3")
+        "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK -O3")
+        "-DNDEBUG -DBENCHMARK")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g -fverbose-asm -O3")
+        "-DDEBUG -g")
 else()
     message(FATAL_ERROR "Unsupported compiler detected: "
         ${CMAKE_CXX_COMPILER})
