@@ -1,10 +1,11 @@
 #include <bitset>
 #include <cmath>
-#include <fiuncho/engine/BitTable.h>
+#include <fiuncho/GenotypeTable.h>
 
 template <>
-BitTable<uint64_t>::BitTable(const short order, const size_t cases_words,
-                             const size_t ctrls_words)
+GenotypeTable<uint64_t>::GenotypeTable(const short order,
+                                       const size_t cases_words,
+                                       const size_t ctrls_words)
     : order(order), size(std::pow(3, order)), cases_words(cases_words),
       ctrls_words(ctrls_words),
       alloc(std::make_unique<uint64_t[]>(size * (cases_words + ctrls_words))),
@@ -13,9 +14,9 @@ BitTable<uint64_t>::BitTable(const short order, const size_t cases_words,
 }
 
 template <>
-void BitTable<uint64_t>::combine(const BitTable<uint64_t> &t1,
-                                 const BitTable<uint64_t> &t2,
-                                 BitTable<uint64_t> &out) noexcept
+void GenotypeTable<uint64_t>::combine(const GenotypeTable<uint64_t> &t1,
+                                      const GenotypeTable<uint64_t> &t2,
+                                      GenotypeTable<uint64_t> &out) noexcept
 {
     size_t i, j, k;
     // Compute bit tables for cases
@@ -42,8 +43,8 @@ void BitTable<uint64_t>::combine(const BitTable<uint64_t> &t1,
 
 template <>
 template <>
-void BitTable<uint64_t>::combine_and_popcnt(
-    const BitTable<uint64_t> &t1, const BitTable<uint64_t> &t2,
+void GenotypeTable<uint64_t>::combine_and_popcnt(
+    const GenotypeTable<uint64_t> &t1, const GenotypeTable<uint64_t> &t2,
     ContingencyTable<uint32_t> &out) noexcept
 {
     size_t i, j, k;

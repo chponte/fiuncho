@@ -26,8 +26,8 @@
 #ifndef FIUNCHO_MPIENGINE_H
 #define FIUNCHO_MPIENGINE_H
 
-#include <fiuncho/engine/Result.h>
-#include <fiuncho/engine/Search.h>
+#include <fiuncho/utils/Result.h>
+#include <fiuncho/Search.h>
 #include <mpi.h>
 #include <sstream>
 #include <vector>

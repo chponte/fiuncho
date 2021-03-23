@@ -24,7 +24,7 @@
  */
 
 #include <cmath>
-#include <fiuncho/engine/ContingencyTable.h>
+#include <fiuncho/ContingencyTable.h>
 
 template <>
 ContingencyTable<uint32_t>::ContingencyTable(const short order,

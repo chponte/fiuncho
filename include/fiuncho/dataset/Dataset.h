@@ -28,9 +28,9 @@
 #define FIUNCHO_DATASET_H
 
 #include <array>
+#include <fiuncho/GenotypeTable.h>
 #include <fiuncho/dataset/Individual.h>
 #include <fiuncho/dataset/SNP.h>
-#include <fiuncho/engine/BitTable.h>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -39,11 +39,11 @@
 template <class T> class Dataset
 {
   public:
-    BitTable<T> &operator[](int i) { return table_vector[i]; }
+    GenotypeTable<T> &operator[](int i) { return table_vector[i]; }
 
-    const BitTable<T> &operator[](int i) const { return table_vector[i]; }
+    const GenotypeTable<T> &operator[](int i) const { return table_vector[i]; }
 
-    std::vector<BitTable<T>> &data() { return table_vector; }
+    std::vector<GenotypeTable<T>> &data() { return table_vector; }
 
     static Dataset<T> read(std::string tped, std::string tfam)
     {
@@ -93,7 +93,7 @@ template <class T> class Dataset
     }
 
     const size_t cases, ctrls, snps;
-    std::vector<BitTable<T>> table_vector;
+    std::vector<GenotypeTable<T>> table_vector;
 
   private:
     Dataset(T *ptr, size_t cases_count, size_t ctrls_count, size_t snps_count)
@@ -160,7 +160,7 @@ template <class T> class Dataset
 
     inline static void populate(const std::vector<Individual> &inds,
                                 const std::vector<SNP> &snps, T *ptr,
-                                std::vector<BitTable<T>> &data,
+                                std::vector<GenotypeTable<T>> &data,
                                 const size_t cases_words,
                                 const size_t ctrls_words)
     {
@@ -177,8 +177,8 @@ template <class T> class Dataset
             }
 
             // Create bit table for each SNP
-            data.push_back(BitTable<T>(ptr, cases_words, ptr + 3 * cases_words,
-                                       ctrls_words));
+            data.push_back(GenotypeTable<T>(
+                ptr, cases_words, ptr + 3 * cases_words, ctrls_words));
             ptr += 3 * cases_words + 3 * ctrls_words;
             auto &table = data.back();
             // Populate bit table with the snp information

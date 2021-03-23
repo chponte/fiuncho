@@ -25,7 +25,7 @@
  */
 
 #include <cmath>
-#include <fiuncho/engine/algorithms/MutualInformation.h>
+#include <fiuncho/algorithms/MutualInformation.h>
 #include <immintrin.h>
 
 #if !defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)

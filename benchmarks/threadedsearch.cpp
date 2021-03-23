@@ -17,7 +17,7 @@
 
 #include <cstdint>
 #include <fiuncho/dataset/Dataset.h>
-#include <fiuncho/engine/ThreadedSearch.h>
+#include <fiuncho/ThreadedSearch.h>
 #include <fiuncho/utils/MaxArray.h>
 #include <iostream>
 #include <thread>

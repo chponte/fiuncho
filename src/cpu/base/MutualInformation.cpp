@@ -26,7 +26,7 @@
 
 #include <bitset>
 #include <cmath>
-#include <fiuncho/engine/algorithms/MutualInformation.h>
+#include <fiuncho/algorithms/MutualInformation.h>
 
 template <>
 MutualInformation<float>::MutualInformation(unsigned int num_cases,

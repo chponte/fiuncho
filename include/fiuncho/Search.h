@@ -16,8 +16,8 @@
  */
 
 #include <fiuncho/dataset/Dataset.h>
-#include <fiuncho/engine/Distributor.h>
-#include <fiuncho/engine/Result.h>
+#include <fiuncho/Distributor.h>
+#include <fiuncho/utils/Result.h>
 
 #ifndef FIUNCHO_SEARCH_H
 #define FIUNCHO_SEARCH_H

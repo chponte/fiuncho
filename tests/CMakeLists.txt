@@ -66,5 +66,5 @@ link_libraries(libfiuncho)
 create_gtest(test_dataset dataset.cpp
     "${CMAKE_CURRENT_LIST_DIR}/data/test.tped"
     "${CMAKE_CURRENT_LIST_DIR}/data/test.tfam")
-create_gtest(test_bittable bittable.cpp)
+create_gtest(test_genotypetable genotypetable.cpp)
 create_gtest(test_mi mi.cpp)

@@ -16,8 +16,8 @@
  */
 
 #include <gtest/gtest.h>
-#include <fiuncho/engine/ContingencyTable.h>
-#include <fiuncho/engine/algorithms/MutualInformation.h>
+#include <fiuncho/ContingencyTable.h>
+#include <fiuncho/algorithms/MutualInformation.h>
 
 namespace
 {

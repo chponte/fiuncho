@@ -16,9 +16,9 @@
  */
 
 #include <cstdint>
+#include <fiuncho/ContingencyTable.h>
+#include <fiuncho/GenotypeTable.h>
 #include <fiuncho/dataset/Dataset.h>
-#include <fiuncho/engine/BitTable.h>
-#include <fiuncho/engine/ContingencyTable.h>
 #include <iostream>
 #include <pthread.h>
 #include <thread>
@@ -81,9 +81,9 @@ void bench(const int tid, const std::string tped, const std::string tfam,
     const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 
-    const size_t snp_count = dataset.cases.size();
-    ContingencyTable<uint32_t> ctable(order, dataset.cases_words,
-                                      dataset.ctrls_words);
+    const size_t snp_count = dataset.snps;
+    ContingencyTable<uint32_t> ctable(order, dataset[0].cases_words,
+                                      dataset[0].ctrls_words);
     struct timespec start, end;
 
     if (order == 2) {
@@ -92,18 +92,16 @@ void bench(const int tid, const std::string tped, const std::string tfam,
         // Warmup CPU adding an extra 10% of iterations before measuring time
         for (auto reps = 0; reps < repetitions / 10; reps++) {
             for (auto snp = 1; snp < snp_count; snp++) {
-                BitTable<uint64_t>::popcnt(
-                    dataset.cases[0][0], dataset.ctrls[0][0], 3,
-                    dataset.cases[snp][0], dataset.ctrls[snp][0], ctable);
+                GenotypeTable<uint64_t>::combine_and_popcnt(
+                    dataset[0], dataset[snp], ctable);
             }
         }
         // Measure time
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
         for (auto reps = 0; reps < repetitions; reps++) {
             for (auto snp = 1; snp < snp_count; snp++) {
-                BitTable<uint64_t>::popcnt(
-                    dataset.cases[0][0], dataset.ctrls[0][0], 3,
-                    dataset.cases[snp][0], dataset.ctrls[snp][0], ctable);
+                GenotypeTable<uint64_t>::combine_and_popcnt(
+                    dataset[0], dataset[snp], ctable);
             }
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
@@ -111,37 +109,33 @@ void bench(const int tid, const std::string tped, const std::string tfam,
                        start.tv_nsec * 1E-9;
     } else {
         // Initialize previous bit tables outside of the main loop
-        std::vector<BitTable<uint64_t>> prev_tables;
-        prev_tables.emplace_back(2, dataset.cases_words, dataset.ctrls_words);
-        BitTable<uint64_t>::fill(prev_tables[0], dataset.cases[0][0],
-                                 dataset.ctrls[0][0], 3, dataset.cases[1][0],
-                                 dataset.ctrls[1][0]);
+        std::vector<GenotypeTable<uint64_t>> prev_tables;
+        prev_tables.emplace_back(2, dataset[0].cases_words,
+                                 dataset[0].ctrls_words);
+        GenotypeTable<uint64_t>::combine(dataset[0], dataset[1],
+                                         prev_tables[0]);
         for (auto o = 3; o < order; o++) {
-            prev_tables.emplace_back(o, dataset.cases_words,
-                                     dataset.ctrls_words);
-            BitTable<uint64_t>::fill(
-                prev_tables[o - 2], prev_tables[o - 3].cases,
-                prev_tables[o - 3].ctrls, prev_tables[o - 3].size,
-                dataset.cases[o - 1][0], dataset.ctrls[o - 1][0]);
+            prev_tables.emplace_back(o, dataset[0].cases_words,
+                                     dataset[0].ctrls_words);
+            GenotypeTable<uint64_t>::combine(prev_tables[o - 3], dataset[o - 1],
+                                             prev_tables[o - 2]);
         }
-        const BitTable<uint64_t> &last = prev_tables[order - 3];
+        const GenotypeTable<uint64_t> &last = prev_tables[order - 3];
         // Main compute loop for order > 2
         pthread_barrier_wait(&barrier);
         // Warmup CPU adding an extra 10% of iterations before measuring time
         for (auto reps = 0; reps < repetitions / 10; reps++) {
             for (auto snp = order - 1; snp < snp_count; snp++) {
-                BitTable<uint64_t>::popcnt(last.cases, last.ctrls, last.size,
-                                           dataset.cases[snp][0],
-                                           dataset.ctrls[snp][0], ctable);
+                GenotypeTable<uint64_t>::combine_and_popcnt(last, dataset[snp],
+                                                            ctable);
             }
         }
         // Measure time
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
         for (auto reps = 0; reps < repetitions; reps++) {
             for (auto snp = order - 1; snp < snp_count; snp++) {
-                BitTable<uint64_t>::popcnt(last.cases, last.ctrls, last.size,
-                                           dataset.cases[snp][0],
-                                           dataset.ctrls[snp][0], ctable);
+                GenotypeTable<uint64_t>::combine_and_popcnt(last, dataset[snp],
+                                                            ctable);
             }
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);

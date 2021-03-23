@@ -18,7 +18,7 @@
 #ifndef FIUNCHO_ALGORITHM_H
 #define FIUNCHO_ALGORITHM_H
 
-#include <fiuncho/engine/ContingencyTable.h>
+#include <fiuncho/ContingencyTable.h>
 
 template <class T>
 class Algorithm {

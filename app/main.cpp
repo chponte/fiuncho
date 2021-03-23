@@ -26,8 +26,8 @@
  */
 
 #include <fiuncho/Definitions.h>
-#include <fiuncho/engine/MPIEngine.h>
-#include <fiuncho/engine/ThreadedSearch.h>
+#include <fiuncho/MPIEngine.h>
+#include <fiuncho/ThreadedSearch.h>
 #include <fiuncho/utils/Node_information.h>
 #include <fstream>
 #include <gflags/gflags.h>

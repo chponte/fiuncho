@@ -26,7 +26,7 @@
 #ifndef FIUNCHO_MUTUALINFORMATION_H
 #define FIUNCHO_MUTUALINFORMATION_H
 
-#include <fiuncho/engine/Algorithm.h>
+#include <fiuncho/algorithms/Algorithm.h>
 
 template <class T>
 class MutualInformation : public Algorithm<T> {

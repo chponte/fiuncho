@@ -26,11 +26,11 @@
 #ifndef FIUNCHO_THREADEDSEARCH_H
 #define FIUNCHO_THREADEDSEARCH_H
 
+#include <fiuncho/ContingencyTable.h>
+#include <fiuncho/GenotypeTable.h>
+#include <fiuncho/Search.h>
+#include <fiuncho/algorithms/MutualInformation.h>
 #include <fiuncho/dataset/Dataset.h>
-#include <fiuncho/engine/BitTable.h>
-#include <fiuncho/engine/ContingencyTable.h>
-#include <fiuncho/engine/Search.h>
-#include <fiuncho/engine/algorithms/MutualInformation.h>
 #include <fiuncho/utils/MaxArray.h>
 #include <fiuncho/utils/StaticStack.h>
 #include <thread>
@@ -150,7 +150,7 @@ class ThreadedSearch : public Search
             for (i = 0; i < BLOCK_SIZE && it != pairs.end(); i++, ++it) {
                 ids[i * 2] = it->first;
                 ids[i * 2 + 1] = it->second;
-                BitTable<uint64_t>::combine_and_popcnt(
+                GenotypeTable<uint64_t>::combine_and_popcnt(
                     d[it->first], d[it->second], ctables[i]);
             }
             for (j = 0; j < i; j++) {
@@ -177,9 +177,9 @@ class ThreadedSearch : public Search
         Combination *cbuffer = (Combination *)new char[item_size];
 
         // Auxiliary bit tables for combinations sized under the target order
-        std::vector<BitTable<uint64_t>> btables;
+        std::vector<GenotypeTable<uint64_t>> gtables;
         for (auto o = 2; o < order; o++) {
-            btables.emplace_back(o, d[0].cases_words, d[0].ctrls_words);
+            gtables.emplace_back(o, d[0].cases_words, d[0].ctrls_words);
         }
         // Vector of contingency tables (and their SNPs) for block processing
         std::vector<ContingencyTable<uint32_t>> ctables;
@@ -188,7 +188,7 @@ class ThreadedSearch : public Search
         }
         uint32_t ids[BLOCK_SIZE * order];
 
-        MutualInformation<float> mi(d.snps, d.snps);
+        MutualInformation<float> mi(d.cases, d.ctrls);
         Result<uint32_t, float> rbuffer;
         rbuffer.combination.resize(order);
 
@@ -205,8 +205,8 @@ class ThreadedSearch : public Search
                     if (it == pairs.end()) {
                         break;
                     } else {
-                        BitTable<uint64_t>::combine(d[it->first], d[it->second],
-                                                    btables[0]);
+                        GenotypeTable<uint64_t>::combine(
+                            d[it->first], d[it->second], gtables[0]);
                         cbuffer->size = 3;
                         cbuffer->pos[0] = it->first;
                         cbuffer->pos[1] = it->second;
@@ -222,16 +222,16 @@ class ThreadedSearch : public Search
                 }
                 // Process the combination from the top of the stack
                 stack.pop(*cbuffer);
-                const auto &prev = btables[cbuffer->size - 3];
+                const auto &prev = gtables[cbuffer->size - 3];
                 const auto &s = cbuffer->pos[cbuffer->size - 1];
                 if (cbuffer->size == order) {
                     memcpy(ids + i * order, cbuffer->pos, order * 4);
-                    BitTable<uint64_t>::combine_and_popcnt(prev, d[s],
-                                                           ctables[i]);
+                    GenotypeTable<uint64_t>::combine_and_popcnt(prev, d[s],
+                                                                ctables[i]);
                     i++;
                 } else {
-                    BitTable<uint64_t>::combine(prev, d[s],
-                                                btables[cbuffer->size - 2]);
+                    GenotypeTable<uint64_t>::combine(
+                        prev, d[s], gtables[cbuffer->size - 2]);
                     cbuffer->size += 1;
                     for (j = data_lim; j > s; j--) {
                         cbuffer->pos[cbuffer->size - 1] = j;

@@ -15,8 +15,8 @@
 
 ################################### Targets  ###################################
 
-add_executable(bench_btable btable.cpp)
-target_link_libraries(bench_btable PRIVATE libfiuncho)
+add_executable(bench_gtable gtable.cpp)
+target_link_libraries(bench_gtable PRIVATE libfiuncho)
 
 add_executable(bench_ctable ctable.cpp)
 target_link_libraries(bench_ctable PRIVATE libfiuncho)

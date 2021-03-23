@@ -16,8 +16,8 @@
  */
 
 #include <bitset>
-#include <fiuncho/engine/BitTable.h>
-#include <fiuncho/engine/ContingencyTable.h>
+#include <fiuncho/ContingencyTable.h>
+#include <fiuncho/GenotypeTable.h>
 #include <gtest/gtest.h>
 
 #ifdef ALIGN
@@ -91,12 +91,12 @@ alignas(ALIGN)
          0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
          0x0000000000000000}};
 
-BitTable<uint64_t> t1(cases1[0], 8, ctrls1[0], 16);
-BitTable<uint64_t> t2(cases2[0], 8, ctrls2[0], 16);
+GenotypeTable<uint64_t> t1(cases1[0], 8, ctrls1[0], 16);
+GenotypeTable<uint64_t> t2(cases2[0], 8, ctrls2[0], 16);
 
 namespace
 {
-TEST(BitTableTest, fill)
+TEST(GenotypeTableTest, fill)
 {
     uint64_t res_cases[9][8] = {
         {0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff,
@@ -182,13 +182,13 @@ TEST(BitTableTest, fill)
          0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
          0x0000000000000000}};
 
-    BitTable<uint64_t> result(2, 8, 16);
+    GenotypeTable<uint64_t> result(2, 8, 16);
 
     EXPECT_EQ(9, result.size);
     EXPECT_EQ(8, result.cases_words);
     EXPECT_EQ(16, result.ctrls_words);
 
-    BitTable<uint64_t>::combine(t1, t2, result);
+    GenotypeTable<uint64_t>::combine(t1, t2, result);
 
     for (auto i = 0; i < result.size; i++) {
         for (auto j = 0; j < result.cases_words; j++) {
@@ -202,7 +202,7 @@ TEST(BitTableTest, fill)
     }
 }
 
-TEST(BitTableTest, popcnt)
+TEST(GenotypeTableTest, popcnt)
 {
     uint32_t popcnt_cases[9] = {256, 128, 256, 128, 256, 256, 256, 256, 512};
     uint64_t popcnt_ctrls[9] = {512, 512, 256, 512, 1024, 512, 256, 512, 512};
@@ -217,7 +217,7 @@ TEST(BitTableTest, popcnt)
     EXPECT_EQ(8, ctable.cases_words);
     EXPECT_EQ(16, ctable.ctrls_words);
 
-    BitTable<uint64_t>::combine_and_popcnt(t1, t2, ctable);
+    GenotypeTable<uint64_t>::combine_and_popcnt(t1, t2, ctable);
 
     for (auto i = 0; i < 9; i++) {
         EXPECT_EQ(ctable.cases[i], popcnt_cases[i]);
