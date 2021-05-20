@@ -26,8 +26,8 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 # -- Project information -----------------------------------------------------
 
-project = 'fiuncho'
-copyright = '2020, Christian Ponte-Fernández'
+project = 'Fiuncho'
+copyright = '2021, Christian Ponte-Fernández'
 author = 'Christian Ponte-Fernández'
 
 numeric_version = re.search(r'^project\s*\(.*VERSION\s*([^\s]*).*\)\s*$',
@@ -135,7 +135,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'fiuncho.tex', 'fiuncho Documentation',
+    (master_doc, 'fiuncho.tex', 'Fiuncho Documentation',
      'Christian Ponte-Fernández', 'manual'),
 ]
 
@@ -145,7 +145,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'fiuncho', 'fiuncho Documentation',
+    (master_doc, 'fiuncho', 'Fiuncho Documentation',
      [author], 1)
 ]
 
@@ -156,7 +156,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'fiuncho', 'fiuncho Documentation',
+    (master_doc, 'fiuncho', 'Fiuncho Documentation',
      author, 'fiuncho', 'One line description of project.',
      'Miscellaneous'),
 ]

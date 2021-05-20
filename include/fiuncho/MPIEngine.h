@@ -18,9 +18,6 @@
 /**
  * @file Search.h
  * @author Christian Ponte
- * @date 23 May 2018
- *
- * @brief Search class definition.
  */
 
 #ifndef FIUNCHO_MPIENGINE_H
@@ -36,10 +33,52 @@
 #include <iostream>
 #endif
 
+/**
+ * Epistasis search engine, implementing a distributed algorithm using MPI. Each
+ * node available in the MPI context is used to explore SNP combinations in
+ * parallel.
+ */
+
 class MPIEngine
 {
   public:
+    /**
+     * @name Constructors
+     */
+    //@{
+
+    /**
+     * Create an MPIEngine object. The constructor calls MPI routines, and thus
+     * it is mandatory to call the constructor after the MPI environment has
+     * been initialized with the `MPI_Init` function.
+     */
+
     MPIEngine() : mpi_size(get_mpi_size()), mpi_rank(get_mpi_rank()) {}
+
+    //@}
+
+    /**
+     * @name Methods
+     */
+    //@{
+
+    /**
+     * Run the epistasis search on the different MPI processes. Each process
+     * will, in turn, call Search::run to exploit the resources available to
+     * that process.
+     *
+     * @return Vector of Result's sorted in descending order by their
+     * MutualInformation value
+     * @param tped Path to the tped data file
+     * @param tfam Path to the tfam data file
+     * @param order Order of the epistatic interactions to locate
+     * @param outputs Number of results to include in the output vector
+     * @param args Arguments to the Search class
+     * @tparam T Search class to use in the epistasis search
+     * @tparam Args Argument types of the Search class constructor. This
+     * template parameter should be automatically deduced by the compiler and
+     * its explicit use is discouraged
+     */
 
     template <typename T, typename... Args>
     std::vector<Result<uint32_t, float>>
@@ -103,6 +142,8 @@ class MPIEngine
 
         return global_results;
     }
+
+    //@{
 
   private:
     unsigned int get_mpi_size()

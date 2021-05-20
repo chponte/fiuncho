@@ -18,9 +18,6 @@
 /**
  * @file Engine.h
  * @author Christian Ponte
- * @date 1 March 2018
- *
- * @brief Abstract class Engine definition.
  */
 
 #ifndef FIUNCHO_THREADEDSEARCH_H
@@ -42,10 +39,33 @@
 
 #define BLOCK_SIZE 10240
 
+/**
+ * Epistasis search class that uses CPU multi-threading to complete the
+ * search.
+ */
+
 class ThreadedSearch : public Search
 {
   public:
+    /**
+     * @name Constructors
+     */
+    //@{
+
+    /**
+     * Create a ThreadedSearch object.
+     *
+     * @param threads Number of threads to use during the search
+     */
+
     ThreadedSearch(unsigned int threads) : nthreads(threads) {}
+
+    //@}
+
+    /**
+     * @name Methods
+     */
+    //@{
 
     std::vector<Result<uint32_t, float>> run(const Dataset<uint64_t> &dataset,
                                              const unsigned short order,
@@ -116,6 +136,8 @@ class ThreadedSearch : public Search
         results.resize(outputs);
         return results;
     }
+
+    //@}
 
     static void thread_main(const Dataset<uint64_t> &dataset,
                             const unsigned short order,

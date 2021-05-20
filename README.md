@@ -1,5 +1,21 @@
 # Fiuncho
 
 [![Build Status](https://travis-ci.com/UDC-GAC/fiuncho.svg?branch=dev)](https://travis-ci.com/UDC-GAC/fiuncho)
+[![Documentation Status](https://readthedocs.org/projects/fiuncho/badge/?version=dev)](https://fiuncho.readthedocs.io/en/dev/?badge=dev)
 
-## WIP
+Fiuncho is an epistasis detection program, implementing an exhaustive search of
+epistasis interactions of any given size. Fiuncho offers multiple implementations,
+featuring AVX Intrinsics from different AVX extension sets, to support a wide
+variety of CPUs.
+
+## Documentation
+
+Fiuncho's documentation is hosted in RTD:
+https://fiuncho.readthedocs.io/en/latest/
+
+## Reporting problems
+
+If you find any problem using Fiuncho, an error in the documentation or
+something that can be improved, please open an [Issue][1] describing the problem.
+
+[1]: https://github.com/chponte/fiuncho/issues/new

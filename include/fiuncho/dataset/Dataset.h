@@ -18,10 +18,7 @@
 /**
  * @file Dataset.h
  * @author Christian Ponte
- * @date 29 May 2018
- *
- * @brief Dataset class declaration, responsible for reading the data and
- * storing it using a bitwise representation.
+ * @brief Declares and implements the Dataset class
  */
 
 #ifndef FIUNCHO_DATASET_H
@@ -36,14 +33,32 @@
 #include <string>
 #include <vector>
 
+/**
+ * @class Dataset
+ * @brief Class representing a collection of \a N GenotypeTable's, each
+ * containing a single SNP, for \a M individuals
+ *
+ * @tparam T data type used to represent the individual information in the
+ * GenotypeTable's
+ */
+
 template <class T> class Dataset
 {
   public:
-    GenotypeTable<T> &operator[](int i) { return table_vector[i]; }
+    /**
+     * @name Factory methods
+     */
+    //@{
 
-    const GenotypeTable<T> &operator[](int i) const { return table_vector[i]; }
-
-    std::vector<GenotypeTable<T>> &data() { return table_vector; }
+    /**
+     * Read input data and store it using a GenotypeTable representation. The
+     * underlying arrays used in the different tables are allocated contiguously
+     * in memory.
+     *
+     * @param tped Path to the tped input file
+     * @param tfam Path to the tfam input file
+     * @return A Dataset object
+     */
 
     static Dataset<T> read(std::string tped, std::string tfam)
     {
@@ -65,6 +80,17 @@ template <class T> class Dataset
 
         return std::move(d);
     }
+
+    /**
+     * Read input data and store it using a GenotypeTable representation. The
+     * underlying arrays used in the different tables are allocated contiguously
+     * in memory, with each array aligned to \a N bytes.
+     *
+     * @param tped Path to the tped input file
+     * @param tfam Path to the tfam input file
+     * @tparam N number of bytes to align the underlying arrays to
+     * @return A Dataset object
+     */
 
     template <size_t N>
     static Dataset<T> read(std::string tped, std::string tfam)
@@ -92,10 +118,62 @@ template <class T> class Dataset
         return std::move(d);
     }
 
-    const size_t cases, ctrls, snps;
+    //@}
+
+    /**
+     * @name Methods
+     */
+    //@{
+
+    /**
+     * Access the bit table vector.
+     *
+     * @param i Index of the table in the vector
+     * @return A reference to the GenotypeTable object
+     */
+    GenotypeTable<T> &operator[](int i) { return table_vector[i]; }
+
+    const GenotypeTable<T> &operator[](int i) const { return table_vector[i]; }
+
+    /**
+     * Access the underlying vector of GenotypeTable's
+     *
+     * @return A reference to the GenotypeTable vector
+     */
+
+    std::vector<GenotypeTable<T>> &data() { return table_vector; }
+
+    //@}
+
+    /**
+     * @name Attributes
+     */
+    //@{
+
+    /**
+     * Number of individuals in the case group of the data set
+     */
+    const size_t cases;
+
+    /**
+     * Number of individuals in the control group of the data set
+     */
+    const size_t ctrls;
+
+    /**
+     * Number of SNPs in the data set
+     */
+    const size_t snps;
+
+    /**
+     * Vector holding all the GenotypeTable's representing the individual SNP's
+     * information
+     */
     std::vector<GenotypeTable<T>> table_vector;
 
-  private:
+    //@}
+
+private:
     Dataset(T *ptr, size_t cases_count, size_t ctrls_count, size_t snps_count)
         : cases(cases_count), ctrls(ctrls_count), snps(snps_count), alloc(ptr)
     {
