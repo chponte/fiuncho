@@ -26,9 +26,9 @@
 template <typename T> class MaxArray
 {
   public:
-    explicit MaxArray(const size_t &size)
-        : size(size), ptr(std::make_unique<T[]>(size)), a(ptr.get()),
-          min_pos(a), emplacement(0)
+    explicit MaxArray(const size_t &maxsize)
+        : maxsize(maxsize), ptr(std::make_unique<T[]>(maxsize)), a(ptr.get()),
+          min_pos(a), current_size(0)
     {
     }
 
@@ -37,8 +37,8 @@ template <typename T> class MaxArray
     void add(const T &value)
     {
         // There are empty values in the array
-        if (emplacement < size) {
-            T *pos = &a[emplacement++];
+        if (current_size < maxsize) {
+            T *pos = &a[current_size++];
             *pos = value;
             // If this is the minimum value of the array
             if (*pos < *min_pos) {
@@ -47,25 +47,29 @@ template <typename T> class MaxArray
         } else if (value > *min_pos) { // The value must be inserted
             *min_pos = value;
             // Find the new minimum
-            min_pos = std::min_element(a, a + size);
+            min_pos = std::min_element(a, a + maxsize);
         }
     }
 
     T *array()
     {
-        auto copy = new T[size];
-        memcpy(copy, a, sizeof(T) * size);
+        auto copy = new T[maxsize];
+        memcpy(copy, a, sizeof(T) * maxsize);
         return copy;
     }
 
+    size_t size() const {
+        return current_size;
+    }
+
   private:
-    const size_t size;
+    const size_t maxsize;
     std::unique_ptr<T[]> ptr;
     T *a;
     // The position of the minimum value
     T *min_pos;
     // Number of entries of the array full
-    size_t emplacement;
+    size_t current_size;
 };
 
 #endif

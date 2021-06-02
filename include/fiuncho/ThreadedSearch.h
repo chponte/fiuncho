@@ -62,6 +62,8 @@ class ThreadedSearch : public Search
 
     //@}
 
+    ~ThreadedSearch(){}
+
     /**
      * @name Methods
      */
@@ -126,14 +128,16 @@ class ThreadedSearch : public Search
                           << " combinations\n";
 #endif
                 results.insert(results.end(), &maxarrays[i][0],
-                               &maxarrays[i][outputs]);
+                               &maxarrays[i][maxarrays[i].size()]);
                 completed++;
             }
             i = (i + 1) % nthreads;
         }
         // Sort the auxiliar array and resize the result before returning
         std::sort(results.rbegin(), results.rend());
-        results.resize(outputs);
+        if (results.size() > outputs) {
+            results.resize(outputs);
+        }
         return results;
     }
 
@@ -244,6 +248,10 @@ class ThreadedSearch : public Search
                 }
                 // Process the combination from the top of the stack
                 stack.pop(*cbuffer);
+                if (cbuffer->size == 3 && cbuffer->pos[0] == 0 &&
+                    cbuffer->pos[1] == 0 && cbuffer->pos[2] == 9) {
+                    int a = 1;
+                }
                 const auto &prev = gtables[cbuffer->size - 3];
                 const auto &s = cbuffer->pos[cbuffer->size - 1];
                 if (cbuffer->size == order) {

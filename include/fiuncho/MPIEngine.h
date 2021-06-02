@@ -23,8 +23,8 @@
 #ifndef FIUNCHO_MPIENGINE_H
 #define FIUNCHO_MPIENGINE_H
 
-#include <fiuncho/utils/Result.h>
 #include <fiuncho/Search.h>
+#include <fiuncho/utils/Result.h>
 #include <mpi.h>
 #include <sstream>
 #include <vector>
@@ -65,7 +65,7 @@ class MPIEngine
     /**
      * Run the epistasis search on the different MPI processes. Each process
      * will, in turn, call Search::run to exploit the resources available to
-     * that process.
+     * that process. The returned vector will only be available to process 0.
      *
      * @return Vector of Result's sorted in descending order by their
      * MutualInformation value
@@ -109,30 +109,41 @@ class MPIEngine
         local_results = search->run(dataset, order, distributor, outputs);
         delete search;
         // Serialize the results
-        std::stringstream oss;
-        for (auto r : local_results) {
-            Result<uint32_t, float>::serialize(oss, r);
-        }
-        std::string local_buff = oss.str(), global_buff;
-
-        // Gather the results in 0
+        const std::string serialized_results = serialize_results(local_results);
+        local_results.clear();
+        const int nbytes = serialized_results.size();
+        // If process is rank 0
         if (mpi_rank == 0) {
-            global_buff.resize(local_buff.size() * mpi_size);
-        }
-        MPI_Gather(local_buff.data(), local_buff.size(), MPI_BYTE,
-                   (void *)global_buff.data(), local_buff.size(), MPI_BYTE, 0,
-                   MPI_COMM_WORLD);
-
-        // Deserialize the results
-        if (mpi_rank == 0) {
-            oss.str(global_buff);
-            global_results.resize(local_results.size() * mpi_size);
-            for (auto i = 0; i < local_results.size() * mpi_size; i++) {
-                Result<uint32_t, float>::deserialize(oss, global_results[i]);
+            // Gather the number of results per process
+            std::vector<int> recv_counts(mpi_size);
+            MPI_Gather(&nbytes, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0,
+                       MPI_COMM_WORLD);
+            std::vector<int> recv_displs(mpi_size);
+            recv_displs[0] = 0;
+            for (auto i = 1; i < mpi_size; i++) {
+                recv_displs[i] = recv_displs[i - 1] + recv_counts[i - 1];
             }
+            // Gather the actual results
+            std::string buffer(
+                recv_displs[mpi_size - 1] + recv_counts[mpi_size - 1], '\0');
+            MPI_Gatherv(serialized_results.data(), serialized_results.size(),
+                        MPI_BYTE, (void *)buffer.data(), recv_counts.data(),
+                        recv_displs.data(), MPI_BYTE, 0, MPI_COMM_WORLD);
+            // Deserialize the results
+            deserialize_results(buffer, global_results);
             // Sort the result
             std::sort(global_results.rbegin(), global_results.rend());
-            global_results.resize(outputs);
+            if (global_results.size() > outputs) {
+                global_results.resize(outputs);
+            }
+        } else {
+            // Send the number of results to process with rank 0
+            MPI_Gather(&nbytes, 1, MPI_INT, nullptr, 1, MPI_INT, 0,
+                       MPI_COMM_WORLD);
+            // Send the actual serialized results to process with rank 0
+            MPI_Gatherv(serialized_results.data(), serialized_results.size(),
+                        MPI_BYTE, nullptr, nullptr, nullptr, MPI_BYTE, 0,
+                        MPI_COMM_WORLD);
         }
 
 #ifdef BENCHMARK
@@ -158,6 +169,28 @@ class MPIEngine
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         return rank;
+    }
+
+    static std::string
+    serialize_results(const std::vector<Result<uint32_t, float>> &results)
+    {
+        std::stringstream oss;
+        for (auto r = results.begin(); r != results.end(); r++) {
+            Result<uint32_t, float>::serialize(oss, *r);
+        }
+        std::string s = oss.str();
+        return s;
+    }
+
+    static void deserialize_results(const std::string &s,
+                                    std::vector<Result<uint32_t, float>> &v)
+    {
+        std::stringstream iss(s);
+        Result<uint32_t, float> buffer;
+        while (iss.tellg() < s.size()) {
+            Result<uint32_t, float>::deserialize(iss, buffer);
+            v.push_back(buffer);
+        }
     }
 
     const unsigned int mpi_rank;

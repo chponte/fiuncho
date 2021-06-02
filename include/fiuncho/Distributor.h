@@ -36,9 +36,13 @@ template <typename T> class PairList
 
   public:
     PairList(T i, T j, T offset, T step)
-        : p(std::make_pair<T, T>(offset / j, offset % j)), i(i), j(j),
+        : p(std::make_pair<T, T>(0, offset + 1)), i(i), j(j),
           step(step)
     {
+        while (p.first < i && p.second >= j){
+            p.first++;
+            p.second -= j - p.first - 1;
+        }
     }
 
     class iterator
@@ -60,14 +64,13 @@ template <typename T> class PairList
         iterator &operator++()
         { // preincrement
             list->p.second += list->step;
-            while (list->p.first < list->i) {
-                while (list->p.second < list->j) {
-                    return *this;
-                }
+            while (list->p.first < list->i && list->p.second >= list->j){
                 list->p.first++;
-                list->p.second = list->p.first + 1 + (list->p.second % list->j);
+                list->p.second -= list->j - list->p.first - 1;
             }
-            this->list = nullptr;
+            if (list->p.first >= list->i){
+                this->list = nullptr;
+            }
             return *this;
         }
 

@@ -44,7 +44,14 @@ template <typename U, typename V> class Result
 
     bool operator>=(const Result &rhs) const { return !(*this < rhs); }
 
-    inline std::string str()
+    bool operator==(const Result &rhs) const
+    {
+        return val == rhs.val && combination == rhs.combination;
+    }
+
+    bool operator!=(const Result &rhs) const { return !(*this == rhs); }
+
+    inline std::string str() const
     {
         std::stringstream buffer;
         for (U i : combination) {

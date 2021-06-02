@@ -15,8 +15,8 @@
  * along with Fiuncho. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/Distributor.h>
+#include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/utils/Result.h>
 
 #ifndef FIUNCHO_SEARCH_H
@@ -31,6 +31,8 @@
 class Search
 {
   public:
+    virtual ~Search() {}
+
     /**
      * @name Methods
      */
