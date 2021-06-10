@@ -16,7 +16,7 @@
  */
 
 /**
- * @file Search.h
+ * @file MPIEngine.h
  * @author Christian Ponte
  */
 
@@ -81,11 +81,11 @@ class MPIEngine
      */
 
     template <typename T, typename... Args>
-    std::vector<Result<uint32_t, float>>
+    std::vector<Result<int, float>>
     run(const std::string &tped, const std::string &tfam,
         const unsigned int order, const unsigned int outputs, Args &&...args)
     {
-        std::vector<Result<uint32_t, float>> local_results, global_results;
+        std::vector<Result<int, float>> local_results, global_results;
 #ifdef BENCHMARK
         double function_time, dataset_time;
         function_time = MPI_Wtime();
@@ -99,14 +99,15 @@ class MPIEngine
 #endif
 #ifdef BENCHMARK
         dataset_time = MPI_Wtime() - dataset_time;
-        std::cout << "Read " << dataset.cases.size() << " SNPs from "
-                  << dataset.inds_count << " individuals in " << dataset_time
-                  << " seconds\n";
+        std::cout << "Read " << dataset.snps << " SNPs from "
+                  << dataset.cases + dataset.ctrls << " individuals ("
+                  << dataset.cases << " cases, " << dataset.ctrls
+                  << " controls) in " << dataset_time << " seconds\n";
 #endif
-        const Distributor<uint32_t> distributor(dataset.snps, mpi_size,
-                                                mpi_rank);
+        const Distribution<int> distribution(dataset.snps, order - 1,
+                                                mpi_size, mpi_rank);
         Search *search = new T(std::forward<Args>(args)...);
-        local_results = search->run(dataset, order, distributor, outputs);
+        local_results = search->run(dataset, order, distribution, outputs);
         delete search;
         // Serialize the results
         const std::string serialized_results = serialize_results(local_results);
@@ -172,23 +173,23 @@ class MPIEngine
     }
 
     static std::string
-    serialize_results(const std::vector<Result<uint32_t, float>> &results)
+    serialize_results(const std::vector<Result<int, float>> &results)
     {
         std::stringstream oss;
         for (auto r = results.begin(); r != results.end(); r++) {
-            Result<uint32_t, float>::serialize(oss, *r);
+            Result<int, float>::serialize(oss, *r);
         }
         std::string s = oss.str();
         return s;
     }
 
     static void deserialize_results(const std::string &s,
-                                    std::vector<Result<uint32_t, float>> &v)
+                                    std::vector<Result<int, float>> &v)
     {
         std::stringstream iss(s);
-        Result<uint32_t, float> buffer;
+        Result<int, float> buffer;
         while (iss.tellg() < s.size()) {
-            Result<uint32_t, float>::deserialize(iss, buffer);
+            Result<int, float>::deserialize(iss, buffer);
             v.push_back(buffer);
         }
     }

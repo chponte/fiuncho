@@ -15,7 +15,12 @@
  * along with Fiuncho. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fiuncho/Distributor.h>
+/**
+ * @file Search.h
+ * @author Christian Ponte
+ */
+
+#include <fiuncho/Distribution.h>
 #include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/utils/Result.h>
 
@@ -44,14 +49,15 @@ class Search
      * @return Vector of Result's
      * @param dataset Dataset from which the SNPs are read
      * @param order Size of the combinations to explore
-     * @param distributor Distributor object for the particular combination
+     * @param distribution Distribution object for the particular combination
      * distribution of this MPI process
      * @param outputs Number of results to include in the output vector
      */
 
-    virtual std::vector<Result<uint32_t, float>>
+    virtual std::vector<Result<int, float>>
     run(const Dataset<uint64_t> &dataset, const unsigned short order,
-        Distributor<uint32_t> distributor, const unsigned int outputs) = 0;
+        const Distribution<int> &distribution,
+        const unsigned int outputs) = 0;
 
     //@}
 };

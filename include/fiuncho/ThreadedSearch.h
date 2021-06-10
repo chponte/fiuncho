@@ -16,7 +16,7 @@
  */
 
 /**
- * @file Engine.h
+ * @file ThreadedSearch.h
  * @author Christian Ponte
  */
 
@@ -37,8 +37,6 @@
 #include <iostream>
 #endif
 
-#define BLOCK_SIZE 10240
-
 /**
  * Epistasis search class that uses CPU multi-threading to complete the
  * search.
@@ -46,6 +44,117 @@
 
 class ThreadedSearch : public Search
 {
+
+    const unsigned int nthreads;
+
+    class Args
+    {
+      public:
+        const Dataset<uint64_t> &dataset;
+        const unsigned short order;
+        const Distribution<int> distribution;
+        MaxArray<Result<int, float>> maxarray;
+#ifdef BENCHMARK
+        double elapsed_time;
+        size_t combinations;
+#endif
+
+        Args(const Dataset<uint64_t> &dataset, const unsigned short order,
+             const Distribution<int> &distribution, const size_t outputs)
+            : dataset(dataset), order(order), distribution(distribution),
+              maxarray(outputs)
+        {
+#ifdef BENCHMARK
+            elapsed_time = 0;
+            combinations = 0;
+#endif
+        }
+    };
+
+    static void thread_main(Args &args)
+    {
+#ifdef BENCHMARK
+        auto start_time = std::chrono::high_resolution_clock::now();
+#endif
+        if (args.order == 2) {
+            search_order_2(args);
+        } else {
+            search_order_gt_2(args);
+        }
+#ifdef BENCHMARK
+        auto time_diff = std::chrono::high_resolution_clock::now() - start_time;
+        args.elapsed_time = std::chrono::duration<double>(time_diff).count();
+#endif
+    }
+
+    static void search_order_2(Args &args)
+    {
+        // Create contingency table, MI and Result objects
+        ContingencyTable<uint32_t> ct(2, args.dataset[0].cases_words,
+                                      args.dataset[0].ctrls_words);
+        MutualInformation<float> mi(args.dataset.cases, args.dataset.ctrls);
+        Result<int, float> r;
+        // For each combination assigned by the distribution
+        for (auto c = args.distribution.begin(); c < args.distribution.end();
+             ++c) {
+            // Iterate over subsequent combinations
+            r.combination = *c;
+            r.combination.push_back(c->back() + 1);
+            for (auto &i = r.combination.back(); i < args.dataset.snps; ++i) {
+                // Fill contingency table
+                GenotypeTable<uint64_t>::combine_and_popcnt(
+                    args.dataset[c[0]], args.dataset[i], ct);
+                // Compute mutual information
+                r.val = mi.compute(ct);
+                args.maxarray.add(r);
+            }
+#ifdef BENCHMARK
+            args.combinations += args.dataset.snps - c->back() - 1;
+#endif
+        }
+    }
+
+    static void search_order_gt_2(Args &args)
+    {
+        // Allocate genotype tables of size < target interaction order
+        std::vector<GenotypeTable<uint64_t>> gts;
+        gts.reserve(args.order - 2);
+        for (auto o = 2; o < args.order; ++o) {
+            gts.emplace_back(o, args.dataset[0].cases_words,
+                             args.dataset[0].ctrls_words);
+        }
+        // Create contingency table, MI and Result objects
+        ContingencyTable<uint32_t> ct(args.order, args.dataset[0].cases_words,
+                                      args.dataset[0].ctrls_words);
+        MutualInformation<float> mi(args.dataset.cases, args.dataset.ctrls);
+        Result<int, float> r;
+        // For each combination assigned by the distribution
+        for (auto c = args.distribution.begin(); c < args.distribution.end();
+             ++c) {
+            // Fill genotype tables
+            GenotypeTable<uint64_t>::combine(args.dataset[c[0]],
+                                             args.dataset[c[1]], gts[0]);
+            for (auto i = 1; i < args.order - 2; ++i) {
+                GenotypeTable<uint64_t>::combine(
+                    gts[i - 1], args.dataset[c[i + 1]], gts[i]);
+            }
+            // Iterate over subsequent combinations
+            r.combination = *c;
+            r.combination.push_back(c->back() + 1);
+            for (auto &i = r.combination.back(); i < args.dataset.snps; ++i) {
+                // Fill contingency table
+                GenotypeTable<uint64_t>::combine_and_popcnt(
+                    gts.back(), args.dataset[i], ct);
+                // Compute mutual information
+                r.val = mi.compute(ct);
+                args.maxarray.add(r);
+            }
+#ifdef BENCHMARK
+            args.combinations += args.dataset.snps - c->back() - 1;
+#endif
+        }
+    }
+
   public:
     /**
      * @name Constructors
@@ -62,76 +171,45 @@ class ThreadedSearch : public Search
 
     //@}
 
-    ~ThreadedSearch(){}
+    ~ThreadedSearch() {}
 
     /**
      * @name Methods
      */
     //@{
 
-    std::vector<Result<uint32_t, float>> run(const Dataset<uint64_t> &dataset,
-                                             const unsigned short order,
-                                             Distributor<uint32_t> distributor,
-                                             const unsigned int outputs)
+    std::vector<Result<int, float>>
+    run(const Dataset<uint64_t> &dataset, const unsigned short order,
+        const Distribution<int> &distribution, const unsigned int outputs)
     {
         int i;
         // Spawn threads
         std::vector<std::thread> threads;
-        std::vector<MaxArray<Result<uint32_t, float>>> maxarrays;
-#ifdef BENCHMARK
-        std::vector<std::chrono::high_resolution_clock::time_point>
-            thread_timers;
-#endif
+        std::vector<Args> thread_args;
         // Pre-reserve space to avoid reallocating the underlying array, which
         // results in an error since previous addresses are rendered incorrect
-        maxarrays.reserve(nthreads);
+        threads.reserve(nthreads);
+        thread_args.reserve(nthreads);
         for (i = 0; i < nthreads; i++) {
-            maxarrays.emplace_back(outputs);
-#ifdef BENCHMARK
-            thread_timers.push_back(std::chrono::high_resolution_clock::now());
-#endif
-            threads.emplace_back(thread_main, std::ref(dataset), order,
-                                 distributor.layer(nthreads, i).get_pairs(),
-                                 std::ref(maxarrays.back()));
+            thread_args.emplace_back(dataset, order,
+                                     distribution.layer(nthreads, i), outputs);
+            threads.emplace_back(thread_main, std::ref(thread_args.back()));
         }
 
-        std::vector<Result<uint32_t, float>> results;
-        results.reserve(nthreads *
-                        outputs); // Wait for the completion of all threads
-        int completed = 0;
-        i = 0;
-        while (completed < nthreads) {
-            if (threads[i].joinable()) {
-                threads[i].join();
+        std::vector<Result<int, float>> results;
+        results.reserve(nthreads * outputs);
+        // Wait for the completion of all threads
+        for (auto i = 0; i < threads.size(); i++) {
+            threads[i].join();
+            results.insert(
+                results.end(), &thread_args[i].maxarray[0],
+                &thread_args[i].maxarray[thread_args[i].maxarray.size()]);
 #ifdef BENCHMARK
-                // Measure elapsed time
-                auto elapsed_time = std::chrono::high_resolution_clock::now() -
-                                    thread_timers[i];
-                double seconds =
-                    std::chrono::duration<double>(elapsed_time).count();
-                // Count operations
-                const unsigned short k = order - 2;
-                unsigned long ops = 0;
-                // for (auto p : pairs_vector[i]) {
-                //     const unsigned int n = dataset.cases.size() - p.second -
-                //     1; unsigned long num = 1; unsigned long denom = 1; for
-                //     (auto j = n; j > n - k; j--) {
-                //         num *= j;
-                //     }
-                //     for (auto j = k; j > 1; j--) {
-                //         denom *= j;
-                //     }
-                //     ops += num / denom;
-                // }
-                // Print information
-                std::cout << "Thread " << i << ": " << seconds << "s, " << ops
-                          << " combinations\n";
+            // Print information
+            std::cout << "Thread " << i << ": " << thread_args[i].elapsed_time
+                      << "s, " << thread_args[i].combinations
+                      << " combinations\n";
 #endif
-                results.insert(results.end(), &maxarrays[i][0],
-                               &maxarrays[i][maxarrays[i].size()]);
-                completed++;
-            }
-            i = (i + 1) % nthreads;
         }
         // Sort the auxiliar array and resize the result before returning
         std::sort(results.rbegin(), results.rend());
@@ -142,145 +220,6 @@ class ThreadedSearch : public Search
     }
 
     //@}
-
-    static void thread_main(const Dataset<uint64_t> &dataset,
-                            const unsigned short order,
-                            PairList<uint32_t> pairs,
-                            MaxArray<Result<uint32_t, float>> &maxarray)
-    {
-        if (order == 2) {
-            flat_exploration(dataset, pairs, maxarray);
-        } else {
-            depth_exploration(dataset, order, pairs, maxarray);
-        }
-    }
-
-  private:
-    static void flat_exploration(const Dataset<uint64_t> &d,
-                                 PairList<uint32_t> &pairs,
-                                 MaxArray<Result<uint32_t, float>> &maxarray)
-    {
-        std::vector<ContingencyTable<uint32_t>> ctables;
-        ctables.reserve(BLOCK_SIZE);
-        for (auto i = 0; i < BLOCK_SIZE; i++) {
-            ctables.emplace_back(2, d[0].cases_words, d[0].ctrls_words);
-        }
-        uint32_t ids[BLOCK_SIZE * 2];
-        MutualInformation<float> mi(d.cases, d.ctrls);
-        Result<uint32_t, float> buffer;
-        buffer.combination.resize(2);
-
-        int i, j;
-        auto it = pairs.begin();
-        while (it != pairs.end()) {
-            for (i = 0; i < BLOCK_SIZE && it != pairs.end(); i++, ++it) {
-                ids[i * 2] = it->first;
-                ids[i * 2 + 1] = it->second;
-                GenotypeTable<uint64_t>::combine_and_popcnt(
-                    d[it->first], d[it->second], ctables[i]);
-            }
-            for (j = 0; j < i; j++) {
-                buffer.combination[0] = ids[j * 2];
-                buffer.combination[1] = ids[j * 2 + 1];
-                buffer.val = mi.compute(ctables[j]);
-                maxarray.add(buffer);
-            }
-        }
-    }
-
-    static void depth_exploration(const Dataset<uint64_t> &d,
-                                  const unsigned short order,
-                                  PairList<uint32_t> &pairs,
-                                  MaxArray<Result<uint32_t, float>> &maxarray)
-    {
-        typedef struct {
-            unsigned short size;
-            uint32_t pos[];
-        } Combination;
-        // Use a stack to explore combination space
-        const size_t item_size = sizeof(Combination) + order * sizeof(uint32_t);
-        StaticStack<Combination> stack(item_size, d.snps * order - 2);
-        Combination *cbuffer = (Combination *)new char[item_size];
-
-        // Auxiliary bit tables for combinations sized under the target order
-        std::vector<GenotypeTable<uint64_t>> gtables;
-        for (auto o = 2; o < order; o++) {
-            gtables.emplace_back(o, d[0].cases_words, d[0].ctrls_words);
-        }
-        // Vector of contingency tables (and their SNPs) for block processing
-        std::vector<ContingencyTable<uint32_t>> ctables;
-        for (auto i = 0; i < BLOCK_SIZE; i++) {
-            ctables.emplace_back(order, d[0].cases_words, d[0].ctrls_words);
-        }
-        uint32_t ids[BLOCK_SIZE * order];
-
-        MutualInformation<float> mi(d.cases, d.ctrls);
-        Result<uint32_t, float> rbuffer;
-        rbuffer.combination.resize(order);
-
-        const auto data_lim = d.snps - 1;
-        int i, j;
-        auto it = pairs.begin();
-        while (!(stack.empty() && it == pairs.end())) {
-            // Fill ctables block
-            i = 0;
-            while (i < BLOCK_SIZE) {
-                // If the stack is empty read next pair and refill it
-                if (stack.empty()) {
-                    // If there are no pairs left, exit
-                    if (it == pairs.end()) {
-                        break;
-                    } else {
-                        GenotypeTable<uint64_t>::combine(
-                            d[it->first], d[it->second], gtables[0]);
-                        cbuffer->size = 3;
-                        cbuffer->pos[0] = it->first;
-                        cbuffer->pos[1] = it->second;
-                        for (j = data_lim; j > it->second; j--) {
-                            cbuffer->pos[2] = j;
-                            stack.push(*cbuffer);
-                        }
-                        ++it;
-                        continue; // A pair can result in no triplets,
-                                  // therefore we must check if the stack is
-                                  // empty again
-                    }
-                }
-                // Process the combination from the top of the stack
-                stack.pop(*cbuffer);
-                if (cbuffer->size == 3 && cbuffer->pos[0] == 0 &&
-                    cbuffer->pos[1] == 0 && cbuffer->pos[2] == 9) {
-                    int a = 1;
-                }
-                const auto &prev = gtables[cbuffer->size - 3];
-                const auto &s = cbuffer->pos[cbuffer->size - 1];
-                if (cbuffer->size == order) {
-                    memcpy(ids + i * order, cbuffer->pos, order * 4);
-                    GenotypeTable<uint64_t>::combine_and_popcnt(prev, d[s],
-                                                                ctables[i]);
-                    i++;
-                } else {
-                    GenotypeTable<uint64_t>::combine(
-                        prev, d[s], gtables[cbuffer->size - 2]);
-                    cbuffer->size += 1;
-                    for (j = data_lim; j > s; j--) {
-                        cbuffer->pos[cbuffer->size - 1] = j;
-                        stack.push(*cbuffer);
-                    }
-                }
-            }
-            // Compute MI for ctables in block
-            for (j = 0; j < i; j++) {
-                memcpy(rbuffer.combination.data(), ids + j * order, order * 4);
-                rbuffer.val = mi.compute(ctables[j]);
-                maxarray.add(rbuffer);
-            }
-        }
-
-        free(cbuffer);
-    }
-
-    const unsigned int nthreads;
 };
 
 #endif

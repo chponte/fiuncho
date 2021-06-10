@@ -30,6 +30,9 @@ Core functionality
 Distributed algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. doxygenclass:: Distribution
+   :members:
+
 .. doxygenclass:: MPIEngine
    :members:
 

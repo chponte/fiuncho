@@ -3,26 +3,22 @@
 #include <unordered_map>
 #include <vector>
 
-bool has_repeated_elements(std::vector<Result<uint32_t, float>> &v)
+bool has_repeated_elements(std::vector<Result<int, float>> &results)
 {
-    // Hash function for a result
-    auto h = [](const Result<uint32_t, float> *r) {
-        return std::hash<std::string>()(r->str());
+    // String function for a vector of integers
+    auto vec_to_str = [](const std::vector<int> &v) {
+        std::string s;
+        for (auto i = v.begin(); i < v.end(); ++i) {
+            s += std::to_string(*i);
+        }
+        return s;
     };
-    // Equality comparer for the hashtable
-    auto eq = [](const Result<uint32_t, float> *r1,
-                 const Result<uint32_t, float> *r2) { return *r1 != *r2; };
-    // Hashtable: keys are the results, values are the counts
-    std::unordered_map<const Result<uint32_t, float> *, size_t, decltype(h),
-                       decltype(eq)>
-        m(v.size(), h, eq);
+    std::unordered_map<std::string, int> count;
     // Count occurrences
-    for (auto r = v.cbegin(); r != v.cend(); ++r) {
-        ++m[&(*r)];
-    }
-    // Return true if any of the counts is greater than 1
-    for (auto i = m.begin(); i != m.end(); ++i) {
-        if (i->second > 1) {
+    for (auto r = results.begin(); r != results.end(); ++r) {
+        auto s = vec_to_str(r->combination);
+        ++count[s];
+        if (count[s] > 1) {
             return true;
         }
     }
@@ -30,7 +26,7 @@ bool has_repeated_elements(std::vector<Result<uint32_t, float>> &v)
     return false;
 }
 
-bool ascending_combinations(std::vector<Result<uint32_t, float>> &v)
+bool ascending_combinations(std::vector<Result<int, float>> &v)
 {
     // For each result
     for (auto r = v.begin(); r != v.end(); ++r) {
@@ -46,9 +42,9 @@ bool ascending_combinations(std::vector<Result<uint32_t, float>> &v)
     return true;
 }
 
-bool matches_mpi3snp_output(std::vector<Result<uint32_t, float>> &v)
+bool matches_mpi3snp_output(std::vector<Result<int, float>> &v)
 {
-    std::vector<std::vector<uint32_t>> mpi3snp_output{
+    std::vector<std::vector<int>> mpi3snp_output{
         {0, 8, 9}, {0, 5, 9}, {5, 6, 9}, {0, 7, 9}, {1, 3, 9}, {0, 1, 9},
         {0, 3, 9}, {1, 5, 7}, {0, 6, 9}, {0, 3, 4}, {3, 8, 9}, {0, 4, 5},
         {0, 5, 6}, {0, 4, 9}, {5, 7, 9}, {4, 5, 7}, {5, 7, 8}, {0, 5, 7},

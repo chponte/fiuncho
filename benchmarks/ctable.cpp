@@ -15,6 +15,7 @@
  * along with Fiuncho. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "utils.h"
 #include <cstdint>
 #include <fiuncho/ContingencyTable.h>
 #include <fiuncho/GenotypeTable.h>
@@ -23,7 +24,6 @@
 #include <pthread.h>
 #include <thread>
 #include <time.h>
-#include <vector>
 
 /*
  *  This benchmark programs calculates contingency tabless of a specific order
@@ -49,19 +49,6 @@ unsigned int repetitions;
 
 unsigned short thread_count;
 pthread_barrier_t barrier;
-
-std::vector<int> split_into_ints(const std::string &s, const char sep)
-{
-    std::vector<int> ints;
-    size_t pos = s.find(sep, 0), prev = 0;
-    while (pos != std::string::npos) {
-        ints.push_back(atoi(s.substr(prev, pos - prev).c_str()));
-        prev = pos + 1;
-        pos = s.find(sep, pos + 1);
-    }
-    ints.push_back(atoi(s.substr(prev).c_str()));
-    return ints;
-}
 
 void bench(const int tid, const std::string tped, const std::string tfam,
            const unsigned short order, double &elapsed_time, const int affinity)

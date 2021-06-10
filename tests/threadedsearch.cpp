@@ -16,7 +16,7 @@
  */
 
 #include "utils.h"
-#include <fiuncho/Distributor.h>
+#include <fiuncho/Distribution.h>
 #include <fiuncho/Search.h>
 #include <fiuncho/ThreadedSearch.h>
 #include <fiuncho/dataset/Dataset.h>
@@ -26,7 +26,7 @@ std::string tped, tfam;
 
 namespace
 {
-TEST(ThreadedSearchTest, SingleThread)
+TEST(ThreadedSearchTest, Main)
 {
     // Run ThreadedSearch
 #ifdef ALIGN
@@ -35,37 +35,23 @@ TEST(ThreadedSearchTest, SingleThread)
 #else
     const Dataset<uint64_t> dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
-    ThreadedSearch search(1);
-    Distributor<uint32_t> distributor(dataset.snps, 1, 0);
 
-    for (auto o = 2; o < 5; o++) {
-        auto result = search.run(dataset, o, distributor, 100);
-        EXPECT_FALSE(has_repeated_elements(result));
-        EXPECT_TRUE(ascending_combinations(result));
-        if (o == 3) {
-            EXPECT_TRUE(matches_mpi3snp_output(result));
-        }
-    }
-}
-
-TEST(ThreadedSearchTest, MultiThread)
-{
-    // Run ThreadedSearch
-#ifdef ALIGN
-    const Dataset<uint64_t> dataset =
-        Dataset<uint64_t>::read<ALIGN>(tped, tfam);
-#else
-    const Dataset<uint64_t> dataset = Dataset<uint64_t>::read(tped, tfam);
-#endif
-    ThreadedSearch search(32);
-    Distributor<uint32_t> distributor(dataset.snps, 1, 0);
-
-    for (auto o = 2; o < 5; o++) {
-        auto result = search.run(dataset, o, distributor, 100);
-        EXPECT_FALSE(has_repeated_elements(result));
-        EXPECT_TRUE(ascending_combinations(result));
-        if (o == 3) {
-            EXPECT_TRUE(matches_mpi3snp_output(result));
+    std::vector<int> thread_count_vector{1, 32};
+    for (auto t : thread_count_vector) {
+        ThreadedSearch search(t);
+        for (auto o = 2; o < 5; o++) {
+            Distribution<int> distribution(dataset.snps, o - 1, 1, 0);
+            auto result = search.run(dataset, o, distribution, 100);
+            EXPECT_GT(result.size(), 0);
+            if (o > 2) {
+                EXPECT_EQ(result.size(), 100);
+            }
+            EXPECT_EQ(result[0].combination.size(), o);
+            EXPECT_FALSE(has_repeated_elements(result));
+            EXPECT_TRUE(ascending_combinations(result));
+            if (o == 3) {
+                EXPECT_TRUE(matches_mpi3snp_output(result));
+            }
         }
     }
 }

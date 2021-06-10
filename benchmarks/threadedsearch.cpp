@@ -44,94 +44,28 @@
  *      5: Path to the TFAM input file
  */
 
-unsigned int repetitions;
-
-unsigned short thread_count;
-pthread_barrier_t barrier;
-
-std::vector<int> split_into_ints(const std::string &s, const char sep)
+int main(int argc, char *argv[])
 {
-    std::vector<int> ints;
-    size_t pos = s.find(sep, 0), prev = 0;
-    while (pos != std::string::npos) {
-        ints.push_back(atoi(s.substr(prev, pos - prev).c_str()));
-        prev = pos + 1;
-        pos = s.find(sep, pos + 1);
-    }
-    ints.push_back(atoi(s.substr(prev).c_str()));
-    return ints;
-}
-
-void bench(const int tid, const std::string tped, const std::string tfam,
-           const unsigned short order, double &elapsed_time, const int affinity)
-{
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(affinity, &cpuset);
-    int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-    if (rc != 0) {
-        std::cerr << "Error calling pthread_setaffinity_np: " << rc << "\n";
+    if (argc != 5) {
+        std::cout << argv[0] << " <NHREADS> <ORDER> <TPED> <TFAM>" << std::endl;
+        return 0;
     }
 
-    struct timespec start, end;
-
-    // Init input data
+    // Initialization
+    // Arguments
+    const unsigned short thread_count = atoi(argv[1]);
+    const unsigned short order = atoi(argv[2]);
+    const std::string tped = argv[3], tfam = argv[4];
+        // Init input data
 #ifdef ALIGN
     const Dataset<uint64_t> &dataset =
         Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
     const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
-    PairList<uint32_t> pairs(dataset.snps, dataset.snps, 0, 1);
-    MaxArray<Result<uint32_t, float>> maxarray(10);
-
-    // Wait for all threads in order to start at the same time
-    pthread_barrier_wait(&barrier);
-    // Meassure search time
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-    ThreadedSearch::thread_main(dataset, order, pairs, maxarray);
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
-    elapsed_time =
-        end.tv_sec + end.tv_nsec * 1E-9 - start.tv_sec - start.tv_nsec * 1E-9;
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc != 5) {
-        std::cout << argv[0] << " <THREADS> <ORDER> <TPED> <TFAM>" << std::endl;
-        return 0;
-    }
-
-    // Initialization
-    // Arguments
-    std::vector<int> affinity = split_into_ints(std::string(argv[1]), ',');
-    thread_count = affinity.size();
-    const unsigned short order = atoi(argv[2]);
-    const std::string tped = argv[3], tfam = argv[4];
-    // Variables
-    pthread_barrier_init(&barrier, NULL, thread_count);
-    std::vector<std::thread> threads;
-    std::vector<double> times;
-    times.resize(thread_count);
-
-    // Spawn thread_count - 1 threads
-    for (auto i = 1; i < affinity.size(); i++) {
-        threads.emplace_back(bench, i, tped, tfam, order, std::ref(times[i]),
-                             affinity[i]);
-    }
-    // Also use current thread
-    bench(0, tped, tfam, order, times[0], affinity[0]);
-
-    // Finalization
-    // Wait for completion
-    for (auto &thread : threads) {
-        thread.join();
-    }
-    // Print times
-    for (auto i = 0; i < thread_count - 1; i++) {
-        std::cout << times[i] << ',';
-    }
-    std::cout << times[thread_count - 1] << '\n';
+    Distribution<int> distribution(dataset.snps, order - 1, 1, 0);
+    auto search = ThreadedSearch(thread_count);
+    search.run(dataset, order, distribution, 10);
 
     return 0;
 }
