@@ -119,7 +119,7 @@ template <typename T> class Distribution
             increment(offset);
         }
 
-        const std::vector<T> operator*() const { return c; }
+        const std::vector<T> &operator*() const { return c; }
 
         const std::vector<T> *operator->() const { return &c; }
 
