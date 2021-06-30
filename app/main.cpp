@@ -30,52 +30,129 @@
 #include <fiuncho/ThreadedSearch.h>
 #include <fiuncho/utils/Node_information.h>
 #include <fstream>
-#include <gflags/gflags.h>
 #include <iostream>
+#include <tclap/CmdLine.h>
+#include <unistd.h>
 
-DEFINE_uint32(nout, 10, "number of combinations to output");
-DEFINE_bool(benchmark, false, "enable benchmarking mode");
-DEFINE_uint32(threads, std::thread::hardware_concurrency(),
-              "number of threads to use");
-DECLARE_uint32(nout);
+typedef struct {
+    std::string tped, tfam, output;
+    short order, threads, noutputs;
+} Arguments;
 
-DEFINE_uint32(order, 3, "combination order to explore");
-
-void read_file_names(const int &argc, char **const &argv, std::string &tped,
-                     std::string &tfam, std::string &out)
+Arguments read_arguments(int argc, char **argv)
 {
-    // Check if tped file was specified
-    if (argc < 2) {
-        std::cerr << "ERROR: TPED must be set on the commandline" << std::endl;
-    }
-    // Check if tfam file was specified
-    if (argc < 3) {
-        std::cerr << "ERROR: TFAM must be set on the commandline" << std::endl;
-    }
-    // Check if output file was specified
-    if (argc < 4) {
-        std::cerr << "ERROR: OUT must be set on the commandline" << std::endl;
-        exit(1);
-    }
-    // Check if any extra parameter was given
-    if (argc > 4) {
-        for (auto i = 4; i < argc; i++) {
-            std::cerr << "ERROR: unknown command line parameter '" << argv[i]
-                      << "'" << std::endl;
+    // Create TCLAP CmdLine
+    TCLAP::CmdLine cmd(
+        "Full documentation available at https://fiuncho.readthedocs.io/", ' ',
+        FIUNCHO_VERSION);
+    class : public TCLAP::StdOutput
+    {
+      public:
+        virtual void version(TCLAP::CmdLineInterface &c)
+        {
+            std::cout << "Fiuncho"
+                      << " " << c.getVersion() << " (" << FIUNCHO_COMMIT_HASH
+                      << ")\nBuilt with " << COMPILER_NAME << " ("
+                      << COMPILER_VERSION << ") using flags: " << COMPILER_FLAGS
+                      << "\n\n";
+            std::cout
+                << "Copyright (C) 2021 Christian Ponte, Universidade da "
+                   "Coruña\n"
+                   "This program comes with ABSOLUTELY NO WARRANTY. This is "
+                   "free\n"
+                   "software, and you are welcome to redistribute it under\n"
+                   "certain conditions. License available at:\n"
+                   "https://fiuncho.readthedocs.io/en/latest/license.html"
+                << std::endl;
         }
-        exit(1);
-    }
-    // Return file names
-    tped = argv[1];
-    tfam = argv[2];
-    out = argv[3];
+
+        virtual void failure(TCLAP::CmdLineInterface &c, TCLAP::ArgException &e)
+        {
+            throw e;
+        }
+    } cmd_output;
+    cmd.setOutput(&cmd_output);
+    class : public TCLAP::Constraint<short>
+    {
+        bool check(const short &order) const { return order > 1; }
+
+        std::string shortID() const { return "integer"; }
+
+        std::string description() const
+        {
+            return "order is equal or greater than 2";
+        }
+    } order_constraint;
+    TCLAP::ValueArg<short> order("o", "order",
+                                 "Order of the interactions to explore.", true,
+                                 0, &order_constraint);
+    cmd.add(order);
+    class : public TCLAP::Constraint<short>
+    {
+        bool check(const short &threads) const { return threads > 0; }
+
+        std::string shortID() const { return "integer"; }
+
+        std::string description() const { return "threads is greater than 0"; }
+    } threads_constraint;
+    TCLAP::ValueArg<short> threads("t", "threads",
+                                   "Number of threads to use. By default it "
+                                   "uses all cores available to the process.",
+                                   false, 0, &threads_constraint);
+    cmd.add(threads);
+    class : public TCLAP::Constraint<int>
+    {
+        bool check(const int &noutputs) const { return noutputs > 0; }
+
+        std::string shortID() const { return "integer"; }
+
+        std::string description() const { return "noutputs is greater than 0"; }
+    } noutputs_constraint;
+    TCLAP::ValueArg<int> noutputs("n", "noutputs",
+                                  "Number of combinations to output. By "
+                                  "default, it outputs 10 combinations.",
+                                  false, 10, &noutputs_constraint);
+    cmd.add(noutputs);
+    class : public TCLAP::Constraint<std::string>
+    {
+        bool check(const std::string &path) const
+        {
+            return access(path.c_str(), R_OK) == 0;
+        }
+
+        std::string shortID() const { return "path"; }
+
+        std::string description() const
+        {
+            return "path points to a readable file";
+        }
+    } file_constraint;
+    TCLAP::UnlabeledValueArg<std::string> tped(
+        "tped", "Path to the input tped data file.", true, "",
+        &file_constraint);
+    cmd.add(tped);
+    TCLAP::UnlabeledValueArg<std::string> tfam(
+        "tfam", "Tath to the input tfam data file.", true, "",
+        &file_constraint);
+    cmd.add(tfam);
+    TCLAP::UnlabeledValueArg<std::string> output(
+        "output", "Path to the output file.", true, "", &file_constraint);
+    cmd.add(output);
+    // Read
+    Arguments args;
+    cmd.parse(argc, argv);
+    args.tped = tped.getValue();
+    args.tfam = tfam.getValue();
+    args.output = output.getValue();
+    args.order = order.getValue();
+    args.threads = threads.getValue();
+    return args;
 }
 
 int main(int argc, char **argv)
 {
-    MPI_Init(&argc, &argv);
-
     int rank;
+    MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
 #ifdef DEBUG
@@ -84,41 +161,33 @@ int main(int argc, char **argv)
         std::cout << argv[i] << " ";
     }
     std::cout << '\n';
-#endif
-
-    // Run argument parser
-    gflags::SetVersionString(PROJECT_VERSION + '\n' + PROJECT_LICENSE);
-    gflags::SetUsageMessage(argv[0] + std::string(" TPED TFAM OUT"));
-    gflags::ParseCommandLineFlags(&argc, &argv, true);
-    std::string tped, tfam, out;
-    read_file_names(argc, argv, tped, tfam, out);
-
-#ifdef DEBUG
     // Print node information
     Node_information info;
     std::cout << info.to_string() << '\n';
 #endif
 
-    // Execute search
     try {
+        // Read arguments
+        auto args = read_arguments(argc, argv);
+        // Execute search
         MPIEngine engine;
         auto results = engine.run<ThreadedSearch>(
-            tped, tfam, (unsigned int)FLAGS_order, (unsigned int)FLAGS_nout,
-            (unsigned int)FLAGS_threads);
+            args.tped, args.tfam, args.order, args.noutputs, args.threads);
         if (rank == 0) {
             // Write results to the output file
-            std::ofstream of(out.c_str(), std::ios::out);
+            std::ofstream of(args.output, std::ios::out);
             for (auto r : results) {
                 of << r.str() << '\n';
             }
             of.close();
         }
+    } catch (const TCLAP::ArgException &e) {
+        std::cerr << e.error() << std::endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
     } catch (const std::runtime_error &e) {
-        std::cerr << e.what() << '\n';
+        std::cerr << e.what() << std::endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
-
     MPI_Finalize();
-    gflags::ShutDownCommandLineFlags();
     return 0;
 }

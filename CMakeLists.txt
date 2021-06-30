@@ -63,8 +63,8 @@ else()
 endif()
 
 # Build type configuration
-set(DEFAULT_BUILD_TYPE "Release")
-set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS "Debug;RelWithDebInfo")
+set(DEFAULT_BUILD_TYPE "RELEASE")
+set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS "DEBUG;RELWITHDEBINFO")
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS
         "Setting build type to ${DEFAULT_BUILD_TYPE} as none was specified")
@@ -72,7 +72,9 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
         CACHE STRING "Choose the type of build" FORCE)
     # Set the possible values of build type for cmake-gui
     set_property(CACHE CMAKE_BUILD_TYPE
-        PROPERTY STRINGS "Debug" "Release" "Benchmark" "RelWithDebInfo")
+        PROPERTY STRINGS "DEBUG" "RELEASE" "BENCHMARK" "RELWITHDEBINFO")
+else()
+    string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE)
 endif ()
 
 ############################# Project directories  #############################

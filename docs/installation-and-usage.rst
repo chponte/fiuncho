@@ -57,22 +57,26 @@ More advanced configurations are also possible through CMake's project
 variables. In addition to the default CMake variables, this project introduces
 the following variables:
 
-`CMAKE_BUILD_TYPE`
+CMAKE_BUILD_TYPE
   The default CMake variable to select a build configuration. Accepted values
   are `Debug`, `DebWithRelInfo`, `Release` and `Benchmark`.
-`FORCE_AVX512F512`
+
+FORCE_AVX512F512
   Force CMake to build Fiuncho using the AVX Intrinsics implementation using 512
   bit operations from the AVX512F extension. Accepted values are `ON` and `OFF`.
   This option is incompatible with any other `FORCE_` option.
-`FORCE_AVX512F256`
+
+FORCE_AVX512F256
   Force CMake to build Fiuncho using the AVX Intrinsics implementation using 256
   bit operations from the AVX512F extension. Accepted values are `ON` and `OFF`.
   This option is incompatible with any other `FORCE_` option.
-`FORCE_AVX2`
+
+FORCE_AVX2
   Force CMake to build Fiuncho using the AVX Intrinsics implementation using 256
   bit operations from the AVX2 extension. Accepted values are `ON` and `OFF`.
   This option is incompatible with any other `FORCE_` option.
-`FORCE_NOAVX`
+
+FORCE_NOAVX
   Force CMake to build Fiuncho not using any of the AVX Intrinsics
   implementations. Accepted values are `ON` and `OFF`. This option is
   incompatible with any other `FORCE_` option.
@@ -80,5 +84,55 @@ the following variables:
 ------------------------------------------
 Command line usage
 ------------------------------------------
+
+Fiuncho can be invoked as follows::
+
+   fiuncho [-h] [--version] [-n <integer>]
+           [-t <integer>] -o <integer>
+           tped tfam output
+
+
+Note that fiuncho is an MPI program, and as such it should be called through
+`mpiexec` or any other parallel job launcher such as `srun` from SLURM. If you
+need help with launching an MPI program, please refer to the MPI or job
+scheduling system documentation instead.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Named arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-o, --order
+    **Required.** Integer equal or greater than 2 specifying the order of the
+    epistasis interactions to explore during the search.
+
+-t, --threads
+    Number of threads for the process to use during the search. Note that if you
+    are running an MPI job with multiple processes, each process will create the
+    same number of thread. If it's not specified, fiuncho will use as many
+    threads as physical cores are available to the process.
+
+-n, --noutputs
+    Integer greater than 0 indicating the number of combinations to output. If
+    it's not specified, it will output 10 combinations.
+
+-h, --help
+    Displays usage information and exits.
+
+--version
+    Displays version information and exits.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Positional arguments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tped
+    **Required.** First positional argument indicating the path to the tped data
+    file.
+tfam
+    **Required.** Second positional argument indicating the path to the tfam
+    data file.
+output
+    **Required.** Third positional argument indicating the path to the output
+    file.
 
 

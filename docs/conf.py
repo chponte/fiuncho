@@ -200,3 +200,9 @@ if read_the_docs_build:
     configureDoxyfile(input_dirs, output_dir)
     subprocess.call('doxygen', shell=True)
     breathe_projects['fiuncho'] = 'build/xml'
+else:
+    input_dirs = ['../include', '../src']
+    output_dir = '_build'
+    configureDoxyfile(input_dirs, output_dir)
+    subprocess.call('doxygen', shell=True)
+    breathe_projects['fiuncho'] = '_build/xml'

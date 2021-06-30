@@ -15,42 +15,35 @@
 
 ################################# Dependencies #################################
 
-find_package(GFlags)
-
-if(GFLAGS_FOUND)
-    include_directories(${GFLAGS_INCLUDE_DIR})
-    link_libraries(${GFLAGS_LIBRARY})
-else()
-    # Unset variables created during the find_package call to avoid conflicts
-    unset(GFlags_FOUND)
-    unset(GFlags_FOUND CACHE)
-    unset(GFLAGS_FOUND)
-    unset(GFLAGS_FOUND CACHE)
-    unset(GFLAGS_INCLUDE_DIR)
-    unset(GFLAGS_INCLUDE_DIR CACHE)
-    unset(GFLAGS_LIBRARY)
-    unset(GFLAGS_LIBRARY CACHE)
-    unset(GFLAGS_ROOT)
-    unset(GFLAGS_ROOT CACHE)
-    include(FetchContent)
-    FetchContent_Declare(gflags
-        GIT_REPOSITORY https://github.com/gflags/gflags.git
-        GIT_TAG v2.2.2)
-    FetchContent_GetProperties(gflags)
-    if(NOT gflags_POPULATED)
-        FetchContent_Populate(gflags)
-        add_subdirectory(${gflags_SOURCE_DIR} ${gflags_BINARY_DIR}
-            EXCLUDE_FROM_ALL)
-        # Disable help messages from parameters defined inside the library
-        get_target_property(gflags_target gflags::gflags ALIASED_TARGET)
-        target_compile_definitions(${gflags_target} PRIVATE
-            -D STRIP_FLAG_HELP=1)
-    endif()
-    link_libraries(gflags::gflags)
+include(FetchContent)
+FetchContent_Declare(tclap_git
+    GIT_REPOSITORY https://github.com/mirror/tclap
+    GIT_TAG 1.4.0-rc1)
+FetchContent_GetProperties(tclap_git)
+if(NOT tclap_git_POPULATED)
+    FetchContent_Populate(tclap_git)
+    add_subdirectory(
+        ${tclap_git_SOURCE_DIR}
+        ${tclap_git_BINARY_DIR}
+        EXCLUDE_FROM_ALL)
 endif()
 
 ################################### Targets  ###################################
 
+# Read git hash
+execute_process(
+    COMMAND git log -1 --format=%h
+    WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    OUTPUT_VARIABLE GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+# Create string with compile flags
+string(STRIP "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}}" COMPILER_FLAGS)
 # Add all available targets
 add_executable(fiuncho main.cpp)
-target_link_libraries(fiuncho libfiuncho)
+target_link_libraries(fiuncho TCLAP libfiuncho)
+target_compile_definitions(fiuncho PRIVATE
+    FIUNCHO_VERSION="v${Fiuncho_VERSION}"
+    FIUNCHO_COMMIT_HASH="${GIT_HASH}"
+    COMPILER_NAME="${CMAKE_CXX_COMPILER_ID}"
+    COMPILER_VERSION="${CMAKE_CXX_COMPILER_VERSION}"
+    COMPILER_FLAGS="${COMPILER_FLAGS}")
