@@ -1,5 +1,7 @@
 # Fiuncho
 
+![](https://img.shields.io/badge/C++-14-blue.svg?style=flat&logo=c%2B%2B)
+![](https://img.shields.io/github/license/UDC-GAC/fiuncho?color=blue)
 [![Build Status](https://travis-ci.com/UDC-GAC/fiuncho.svg?branch=dev)](https://travis-ci.com/UDC-GAC/fiuncho)
 [![Documentation Status](https://readthedocs.org/projects/fiuncho/badge/?version=dev)](https://fiuncho.readthedocs.io/en/dev/?badge=dev)
 
