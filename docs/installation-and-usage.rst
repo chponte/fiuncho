@@ -53,6 +53,10 @@ optimization level 3 (with `-O3`) and a target compilation architecture (with
 different machine than the current one, replace the `native` target architecture
 with the appropriate one.
 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Advanced configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 More advanced configurations are also possible through CMake's project
 variables. In addition to the default CMake variables, this project introduces
 the following variables:

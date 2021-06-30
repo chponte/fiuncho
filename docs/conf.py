@@ -44,7 +44,10 @@ version = f'v{numeric_version}'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [ "breathe" ]
+extensions = [
+    'sphinx.ext.autosectionlabel',
+    'breathe'
+]
 
 # Breathe Configuration
 
@@ -206,3 +209,7 @@ else:
     configureDoxyfile(input_dirs, output_dir)
     subprocess.call('doxygen', shell=True)
     breathe_projects['fiuncho'] = '_build/xml'
+
+# -- Options for autosectionlabel extenstion ---------------------------------
+
+autosectionlabel_prefix_document = True

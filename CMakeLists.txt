@@ -79,13 +79,17 @@ endif ()
 
 ############################# Project directories  #############################
 
-# Project documentation
-add_subdirectory(docs)
-# Project sources
+# Library
 add_subdirectory(src)
-add_subdirectory(app)
-# Project tests
-enable_testing()
-add_subdirectory(tests)
-# Benchmark codes
-add_subdirectory(benchmarks EXCLUDE_FROM_ALL)
+# If this is the top-level project, add more targets
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    # Project documentation
+    add_subdirectory(docs)
+    # Main program
+    add_subdirectory(app)
+    # Tests
+    enable_testing()
+    add_subdirectory(tests)
+    # Benchmarks
+    add_subdirectory(benchmarks EXCLUDE_FROM_ALL)
+endif()
