@@ -10,7 +10,7 @@ If you are a developer and want to use any of the C++ classes and methods
 implemented in this program, you can do so by linking to the main library
 ``libfiuncho`` declared in the CMake project.
 
-The following example shows a short program which makes use of Fiuncho's
+The following example shows a short program that makes use of Fiuncho's
 methods, and its corresponding CMake project configuration. Assume the following
 project structure::
 
