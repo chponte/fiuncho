@@ -25,10 +25,21 @@
 
 template <typename T> class MaxArray
 {
+    const size_t maxsize;
+    std::unique_ptr<T[]> ptr;
+    T *a;
+    // The position of the minimum value
+    T *min_pos;
+    // Number of entries of the array full
+    size_t current_size;
+
   public:
+    MaxArray(const MaxArray<T> &) = delete;
+    MaxArray(MaxArray<T> &&) = default;
+
     explicit MaxArray(const size_t &maxsize)
-        : maxsize(maxsize), ptr(std::make_unique<T[]>(maxsize)), a(ptr.get()),
-          min_pos(a), current_size(0)
+        : maxsize(maxsize), ptr(new T[maxsize]), a(ptr.get()), min_pos(a),
+          current_size(0)
     {
     }
 
@@ -58,18 +69,7 @@ template <typename T> class MaxArray
         return copy;
     }
 
-    size_t size() const {
-        return current_size;
-    }
-
-  private:
-    const size_t maxsize;
-    std::unique_ptr<T[]> ptr;
-    T *a;
-    // The position of the minimum value
-    T *min_pos;
-    // Number of entries of the array full
-    size_t current_size;
+    size_t size() const { return current_size; }
 };
 
 #endif

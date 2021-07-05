@@ -3,6 +3,9 @@
 
 template <class T> class StaticStack
 {
+  StaticStack(const StaticStack<T> &) = delete;
+  StaticStack(StaticStack<T> &&) = default;
+
   public:
     StaticStack(size_t item_size, size_t max_items)
         : item_size(item_size),

@@ -92,10 +92,9 @@ class MPIEngine
         dataset_time = MPI_Wtime();
 #endif
 #ifdef ALIGN
-        const Dataset<uint64_t> dataset =
-            Dataset<uint64_t>::read<ALIGN>(tped, tfam);
+        const auto dataset = Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-        auto dataset = Dataset<uint64_t>::read(tped, tfam);
+        const auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 #ifdef BENCHMARK
         dataset_time = MPI_Wtime() - dataset_time;

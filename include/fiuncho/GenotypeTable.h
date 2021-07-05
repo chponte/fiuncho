@@ -46,6 +46,9 @@
 template <class T> class GenotypeTable
 {
   public:
+    GenotypeTable(const GenotypeTable<T> &) = delete;
+    GenotypeTable(GenotypeTable<T> &&) = default;
+
     /**
      * @name Constructors
      */

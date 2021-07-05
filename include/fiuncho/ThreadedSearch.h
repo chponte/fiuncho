@@ -232,12 +232,12 @@ class ThreadedSearch : public Search
     {
         int i;
         // Spawn threads
-        std::vector<std::thread> threads;
         std::vector<Args> thread_args;
+        std::vector<std::thread> threads;
         // Pre-reserve space to avoid reallocating the underlying array, which
         // results in an error since previous addresses are rendered incorrect
-        threads.reserve(nthreads);
         thread_args.reserve(nthreads);
+        threads.reserve(nthreads);
         for (i = 0; i < nthreads; i++) {
             thread_args.emplace_back(dataset, order,
                                      distribution.layer(nthreads, i), outputs);

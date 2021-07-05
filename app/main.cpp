@@ -36,7 +36,8 @@
 
 typedef struct {
     std::string tped, tfam, output;
-    short order, threads, noutputs;
+    short order, threads;
+    unsigned int noutputs;
 } Arguments;
 
 Arguments read_arguments(int argc, char **argv)
@@ -146,6 +147,7 @@ Arguments read_arguments(int argc, char **argv)
     args.output = output.getValue();
     args.order = order.getValue();
     args.threads = threads.getValue();
+    args.noutputs = noutputs.getValue();
     return args;
 }
 

@@ -41,6 +41,9 @@
 template <class T> class ContingencyTable
 {
   public:
+    ContingencyTable(const ContingencyTable<T> &) = delete;
+    ContingencyTable(ContingencyTable<T> &&) = default;
+
     /**
      * @name Constructors
      */

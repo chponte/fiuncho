@@ -45,6 +45,9 @@
 template <class T> class Dataset
 {
   public:
+    Dataset(const Dataset<T> &) = delete;
+    Dataset(Dataset<T> &&) = default;
+
     /**
      * @name Factory methods
      */
@@ -173,7 +176,7 @@ template <class T> class Dataset
 
     //@}
 
-private:
+  private:
     Dataset(T *ptr, size_t cases_count, size_t ctrls_count, size_t snps_count)
         : cases(cases_count), ctrls(ctrls_count), snps(snps_count), alloc(ptr)
     {
@@ -255,8 +258,8 @@ private:
             }
 
             // Create bit table for each SNP
-            data.push_back(GenotypeTable<T>(
-                ptr, cases_words, ptr + 3 * cases_words, ctrls_words));
+            data.emplace_back(ptr, cases_words, ptr + 3 * cases_words,
+                              ctrls_words);
             ptr += 3 * cases_words + 3 * ctrls_words;
             auto &table = data.back();
             // Populate bit table with the snp information
@@ -265,7 +268,7 @@ private:
             for (auto j = 0; j < inds.size(); j++) {
                 // For each individual, check phenotype class
                 if (inds[j].ph == 1) { // If it's a control append genotype to
-                                       // the 3 control buffers
+                    // the 3 control buffers
                     for (auto k = 0; k < 3; k++) {
                         ctrls_buff[k] =
                             (ctrls_buff[k] << 1) + (snps[i].genotypes[j] == k);
