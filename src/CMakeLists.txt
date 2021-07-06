@@ -31,8 +31,6 @@ find_package(VectorLib)
 ################################# Definitions  #################################
 
 file(GLOB_RECURSE HEADER_LIST "${PROJECT_SOURCE_DIR}/include/fiuncho/*.h")
-set(SOURCE_LIST
-    "${PROJECT_SOURCE_DIR}/src/utils/Node_information.cpp")
 set(SOURCE_LIST_BASE
     "${PROJECT_SOURCE_DIR}/src/cpu/base/GenotypeTable.cpp"
     "${PROJECT_SOURCE_DIR}/src/cpu/base/ContingencyTable.cpp"
@@ -50,11 +48,6 @@ set(SOURCE_LIST_AVX512F512
     "${PROJECT_SOURCE_DIR}/src/cpu/avx512f512/ContingencyTable.cpp"
     "${PROJECT_SOURCE_DIR}/src/cpu/avx512f512/MutualInformation.cpp")
 
-################################ Configuration  ################################
-
-configure_file(${PROJECT_SOURCE_DIR}/include/fiuncho/Definitions.h.in
-    ${PROJECT_BINARY_DIR}/include/fiuncho/Definitions.h)
-
 ################################### Targets  ###################################
 
 if(FORCE_AVX512F512)
@@ -66,9 +59,7 @@ if(FORCE_AVX512F512)
         message(FATAL_ERROR "FORCE_AVX512F512 is ${FORCE_AVX512F512}, "
             "but there is no math vector library available")
     endif()
-    add_library(libfiuncho
-        ${SOURCE_LIST}
-        ${SOURCE_LIST_AVX512F512})
+    add_library(libfiuncho ${SOURCE_LIST_AVX512F512})
     target_compile_options(libfiuncho PUBLIC "-DALIGN=64")
 elseif(FORCE_AVX512F256)
     if(NOT AVX512F_ENABLED)
@@ -79,9 +70,7 @@ elseif(FORCE_AVX512F256)
         message(FATAL_ERROR "FORCE_AVX512F256 is ${FORCE_AVX512F256}, "
             "but there is no math vector library available")
     endif()
-    add_library(libfiuncho
-        ${SOURCE_LIST}
-        ${SOURCE_LIST_AVX512F256})
+    add_library(libfiuncho ${SOURCE_LIST_AVX512F256})
     target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
 elseif(FORCE_AVX2)
     if(NOT AVX2_ENABLED)
@@ -92,33 +81,21 @@ elseif(FORCE_AVX2)
         message(FATAL_ERROR "FORCE_AVX2 is ${FORCE_AVX2}, "
             "but there is no math vector library available")
     endif()
-    add_library(libfiuncho
-        ${SOURCE_LIST}
-        ${SOURCE_LIST_AVX2})
+    add_library(libfiuncho ${SOURCE_LIST_AVX2})
     target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
 elseif(FORCE_NOAVX)
-    add_library(libfiuncho
-        ${SOURCE_LIST}
-        ${SOURCE_LIST_BASE})
+    add_library(libfiuncho ${SOURCE_LIST_BASE})
     target_compile_options(libfiuncho PUBLIC)
 else()
     # Default behaviour: use AVX2 if its available
     if (AVX2_ENABLED AND (SVML_AVAILABLE OR LIBMVEC_AVAILABLE))
-        add_library(libfiuncho
-            ${SOURCE_LIST}
-            ${SOURCE_LIST_AVX2})
+        add_library(libfiuncho ${SOURCE_LIST_AVX2})
         target_compile_options(libfiuncho PUBLIC "-DALIGN=32")
     else()
-        add_library(libfiuncho
-            ${SOURCE_LIST}
-            ${SOURCE_LIST_BASE})
+        add_library(libfiuncho ${SOURCE_LIST_BASE})
         target_compile_options(libfiuncho PUBLIC)
     endif()
 endif()
 
-target_include_directories(libfiuncho PUBLIC
-    ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_BINARY_DIR}/include)
-target_link_libraries(libfiuncho PUBLIC
-    Threads::Threads
-    MPI::MPI_CXX)
+target_include_directories(libfiuncho PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(libfiuncho PUBLIC Threads::Threads MPI::MPI_CXX)

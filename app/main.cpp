@@ -25,10 +25,8 @@
  * terminates the execution.
  */
 
-#include <fiuncho/Definitions.h>
 #include <fiuncho/MPIEngine.h>
 #include <fiuncho/ThreadedSearch.h>
-#include <fiuncho/utils/Node_information.h>
 #include <fstream>
 #include <iostream>
 #include <tclap/CmdLine.h>
@@ -156,18 +154,6 @@ int main(int argc, char **argv)
     int rank;
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-#ifdef DEBUG
-    // Print the whole command
-    for (int i = 0; i < argc; i++) {
-        std::cout << argv[i] << " ";
-    }
-    std::cout << '\n';
-    // Print node information
-    Node_information info;
-    std::cout << info.to_string() << '\n';
-#endif
-
     try {
         // Read arguments
         auto args = read_arguments(argc, argv);

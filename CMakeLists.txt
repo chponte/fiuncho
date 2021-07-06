@@ -34,9 +34,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS_RELEASE
         "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK")
+        "-DBENCHMARK -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g")
+        "-g")
 # Intel
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     set(CMAKE_CXX_FLAGS_DEBUG
@@ -44,9 +44,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     set(CMAKE_CXX_FLAGS_RELEASE
         "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK")
+        "-DBENCHMARK -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g")
+        "-g")
 # Clang
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS_DEBUG
@@ -54,9 +54,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS_RELEASE
         "-DNDEBUG")
     set(CMAKE_CXX_FLAGS_BENCHMARK
-        "-DNDEBUG -DBENCHMARK")
+        "-DBENCHMARK -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-        "-DDEBUG -g")
+        "-g")
 else()
     message(FATAL_ERROR "Unsupported compiler detected: "
         ${CMAKE_CXX_COMPILER})
