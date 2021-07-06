@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-bool has_repeated_elements(std::vector<Result<int, float>> &results)
+bool has_repeated_elements(const std::vector<Result<int, float>> &results)
 {
     // String function for a vector of integers
     auto vec_to_str = [](const std::vector<int> &v) {
@@ -26,12 +26,12 @@ bool has_repeated_elements(std::vector<Result<int, float>> &results)
     return false;
 }
 
-bool ascending_combinations(std::vector<Result<int, float>> &v)
+bool ascending_combinations(const std::vector<Result<int, float>> &v)
 {
     // For each result
     for (auto r = v.begin(); r != v.end(); ++r) {
         // Check if every index is strictly superior than its previous
-        for (auto i = 1; i < r->combination.size(); ++i) {
+        for (size_t i = 1; i < r->combination.size(); ++i) {
             if (r->combination[i - 1] >= r->combination[i]) {
                 // If that's the case, return false
                 return false;
@@ -42,7 +42,7 @@ bool ascending_combinations(std::vector<Result<int, float>> &v)
     return true;
 }
 
-bool matches_mpi3snp_output(std::vector<Result<int, float>> &v)
+bool matches_mpi3snp_output(const std::vector<Result<int, float>> &v)
 {
     std::vector<std::vector<int>> mpi3snp_output{
         {0, 8, 9}, {0, 5, 9}, {5, 6, 9}, {0, 7, 9}, {1, 3, 9}, {0, 1, 9},

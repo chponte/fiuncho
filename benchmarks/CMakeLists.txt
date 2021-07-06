@@ -26,3 +26,4 @@ target_link_libraries(bench_mi PRIVATE libfiuncho)
 
 add_executable(bench_threadedsearch threadedsearch.cpp)
 target_link_libraries(bench_threadedsearch PRIVATE libfiuncho)
+target_compile_definitions(bench_threadedsearch PRIVATE -DBENCHMARK)

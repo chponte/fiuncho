@@ -70,8 +70,8 @@ template <class T> class GenotypeTable
 
     GenotypeTable(T *cases, const size_t cases_words, T *ctrls,
                   const size_t ctrls_words)
-        : order(1), size(3), cases(cases), cases_words(cases_words),
-          ctrls(ctrls), ctrls_words(ctrls_words), alloc(nullptr){};
+        : order(1), size(3), cases_words(cases_words), ctrls_words(ctrls_words),
+          alloc(nullptr), cases(cases), ctrls(ctrls){};
 
     /**
      * Create a new uninitialized table, allocating an array with enough space

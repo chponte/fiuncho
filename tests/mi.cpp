@@ -25,20 +25,20 @@ TEST(MI, compute)
 {
     ContingencyTable<uint32_t> ctable(2, 0, 0);
 #ifdef ALIGN
-    for (auto i = 9; i < ctable.size; i++) {
+    for (size_t i = 9; i < ctable.size; i++) {
         ctable.cases[i] = 0;
         ctable.ctrls[i] = 0;
     }
 #endif
     MutualInformation<float> mi(9, 18);
 
-    for (auto i = 0; i < 9; i++) {
+    for (size_t i = 0; i < 9; i++) {
         ctable.cases[i] = 1;
         ctable.ctrls[i] = 2;
     }
     EXPECT_NEAR(0, mi.compute(ctable), 1E-5);
 
-    for (auto i = 0; i < 9; i++) {
+    for (size_t i = 0; i < 9; i++) {
         ctable.cases[i] = 0;
         ctable.ctrls[i] = 0;
     }

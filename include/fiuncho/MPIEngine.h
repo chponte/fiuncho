@@ -25,8 +25,10 @@
 
 #include <fiuncho/Search.h>
 #include <fiuncho/utils/Result.h>
+#include <limits>
 #include <mpi.h>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #ifdef BENCHMARK
@@ -41,6 +43,46 @@
 
 class MPIEngine
 {
+
+    const int mpi_size;
+    const int mpi_rank;
+
+    int get_mpi_size()
+    {
+        int size;
+        MPI_Comm_size(MPI_COMM_WORLD, &size);
+        return size;
+    }
+
+    int get_mpi_rank()
+    {
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        return rank;
+    }
+
+    static std::string
+    serialize_results(const std::vector<Result<int, float>> &results)
+    {
+        std::stringstream oss;
+        for (auto r = results.begin(); r != results.end(); r++) {
+            Result<int, float>::serialize(oss, *r);
+        }
+        std::string s = oss.str();
+        return s;
+    }
+
+    static void deserialize_results(const std::string &s,
+                                    std::vector<Result<int, float>> &v)
+    {
+        std::stringstream iss(s);
+        Result<int, float> buffer;
+        while ((size_t)iss.tellg() < s.size()) {
+            Result<int, float>::deserialize(iss, buffer);
+            v.push_back(buffer);
+        }
+    }
+
   public:
     /**
      * @name Constructors
@@ -96,6 +138,12 @@ class MPIEngine
 #else
         const auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
+        // Check Dataset size to avoid int overflow
+        if (dataset.snps > (size_t)std::numeric_limits<int>::max()) {
+            throw std::runtime_error(
+                "Input data limit exceeded: Dataset contains more than " +
+                std::to_string(std::numeric_limits<int>::max()) + " SNPs");
+        }
 #ifdef BENCHMARK
         dataset_time = MPI_Wtime() - dataset_time;
         std::cout << "Read " << dataset.snps << " SNPs from "
@@ -103,8 +151,8 @@ class MPIEngine
                   << dataset.cases << " cases, " << dataset.ctrls
                   << " controls) in " << dataset_time << " seconds\n";
 #endif
-        const Distribution<int> distribution(dataset.snps, order - 1,
-                                                mpi_size, mpi_rank);
+        const Distribution<int> distribution(dataset.snps, order - 1, mpi_size,
+                                             mpi_rank);
         Search *search = new T(std::forward<Args>(args)...);
         local_results = search->run(dataset, order, distribution, outputs);
         delete search;
@@ -154,47 +202,7 @@ class MPIEngine
         return global_results;
     }
 
-    //@{
-
-  private:
-    unsigned int get_mpi_size()
-    {
-        int size;
-        MPI_Comm_size(MPI_COMM_WORLD, &size);
-        return size;
-    }
-
-    unsigned int get_mpi_rank()
-    {
-        int rank;
-        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-        return rank;
-    }
-
-    static std::string
-    serialize_results(const std::vector<Result<int, float>> &results)
-    {
-        std::stringstream oss;
-        for (auto r = results.begin(); r != results.end(); r++) {
-            Result<int, float>::serialize(oss, *r);
-        }
-        std::string s = oss.str();
-        return s;
-    }
-
-    static void deserialize_results(const std::string &s,
-                                    std::vector<Result<int, float>> &v)
-    {
-        std::stringstream iss(s);
-        Result<int, float> buffer;
-        while (iss.tellg() < s.size()) {
-            Result<int, float>::deserialize(iss, buffer);
-            v.push_back(buffer);
-        }
-    }
-
-    const unsigned int mpi_rank;
-    const unsigned int mpi_size;
+    //@}
 };
 
 #endif

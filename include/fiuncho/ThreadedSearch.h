@@ -37,7 +37,7 @@
 #include <iostream>
 #endif
 
-#define BLOCK_SIZE (long)(16384 / powf(3, args.order - 2))
+#define BLOCK_SIZE (int)(16384 / powf(3, args.order - 2))
 
 /**
  * Epistasis search class that uses CPU multi-threading to complete the
@@ -107,7 +107,7 @@ class ThreadedSearch : public Search
         for (auto c = args.distribution.begin(); c < args.distribution.end();
              ++c) {
             // Iterate over subsequent combinations
-            for (i = c->back() + 1; i < args.dataset.snps; ++i) {
+            for (i = c->back() + 1; i < (int)args.dataset.snps; ++i) {
                 // If the block is full, compute all MI's
                 if (j == BLOCK_SIZE) {
                     for (k = 0; k < BLOCK_SIZE; ++k) {
@@ -170,7 +170,7 @@ class ThreadedSearch : public Search
                     gts[i - 1], args.dataset[c[i + 1]], gts[i]);
             }
             // Iterate over subsequent combinations
-            for (i = c->back() + 1; i < args.dataset.snps; ++i) {
+            for (i = c->back() + 1; i < (int)args.dataset.snps; ++i) {
                 // If the block is full, compute all MI's
                 if (j == BLOCK_SIZE) {
                     for (k = 0; k < BLOCK_SIZE; ++k) {
@@ -230,7 +230,6 @@ class ThreadedSearch : public Search
                                         const Distribution<int> &distribution,
                                         const unsigned int outputs)
     {
-        int i;
         // Spawn threads
         std::vector<Args> thread_args;
         std::vector<std::thread> threads;
@@ -238,7 +237,7 @@ class ThreadedSearch : public Search
         // results in an error since previous addresses are rendered incorrect
         thread_args.reserve(nthreads);
         threads.reserve(nthreads);
-        for (i = 0; i < nthreads; i++) {
+        for (unsigned int i = 0; i < nthreads; i++) {
             thread_args.emplace_back(dataset, order,
                                      distribution.layer(nthreads, i), outputs);
             threads.emplace_back(thread_main, std::ref(thread_args.back()));
@@ -247,7 +246,7 @@ class ThreadedSearch : public Search
         std::vector<Result<int, float>> results;
         results.reserve(nthreads * outputs);
         // Wait for the completion of all threads
-        for (auto i = 0; i < threads.size(); i++) {
+        for (unsigned int i = 0; i < threads.size(); i++) {
             threads[i].join();
             results.insert(
                 results.end(), &thread_args[i].maxarray[0],

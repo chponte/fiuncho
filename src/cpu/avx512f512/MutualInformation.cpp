@@ -59,7 +59,7 @@ float MutualInformation<float>::compute<uint32_t>(
     __m512i z0;
     __m512 z1, z2, z3, z4;
     __mmask16 mask1, mask2, mask3;
-    for (auto i = 0; i < table.size; i += 16) {
+    for (size_t i = 0; i < table.size; i += 16) {
         z0 = _mm512_load_si512(table.cases + i);
         mask1 =
             _mm512_cmp_epi32_mask(z0, _mm512_setzero_si512(), _MM_CMPINT_NE);

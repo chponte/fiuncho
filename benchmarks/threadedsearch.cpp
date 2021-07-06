@@ -16,8 +16,8 @@
  */
 
 #include <cstdint>
-#include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/ThreadedSearch.h>
+#include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/utils/MaxArray.h>
 #include <iostream>
 #include <thread>
@@ -47,7 +47,8 @@
 int main(int argc, char *argv[])
 {
     if (argc != 5) {
-        std::cout << argv[0] << " <NHREADS> <ORDER> <TPED> <TFAM>" << std::endl;
+        std::cout << argv[0] << " <NTHREADS> <ORDER> <TPED> <TFAM>"
+                  << std::endl;
         return 0;
     }
 
@@ -56,12 +57,11 @@ int main(int argc, char *argv[])
     const unsigned short thread_count = atoi(argv[1]);
     const unsigned short order = atoi(argv[2]);
     const std::string tped = argv[3], tfam = argv[4];
-        // Init input data
+    // Data
 #ifdef ALIGN
-    const Dataset<uint64_t> &dataset =
-        Dataset<uint64_t>::read<ALIGN>(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-    const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
     Distribution<int> distribution(dataset.snps, order - 1, 1, 0);
     auto search = ThreadedSearch(thread_count);

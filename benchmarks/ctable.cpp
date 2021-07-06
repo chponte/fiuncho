@@ -45,12 +45,12 @@
  *      5: Path to the TFAM input file
  */
 
-unsigned int repetitions;
+int repetitions;
 
 unsigned short thread_count;
 pthread_barrier_t barrier;
 
-void bench(const int tid, const std::string tped, const std::string tfam,
+void bench(const std::string tped, const std::string tfam,
            const unsigned short order, double &elapsed_time, const int affinity)
 {
     cpu_set_t cpuset;
@@ -62,10 +62,9 @@ void bench(const int tid, const std::string tped, const std::string tfam,
     }
 
 #ifdef ALIGN
-    const Dataset<uint64_t> &dataset =
-        Dataset<uint64_t>::read<ALIGN>(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-    const Dataset<uint64_t> &dataset = Dataset<uint64_t>::read(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 
     const size_t snp_count = dataset.snps;
@@ -78,7 +77,7 @@ void bench(const int tid, const std::string tped, const std::string tfam,
         pthread_barrier_wait(&barrier);
         // Warmup CPU adding an extra 10% of iterations before measuring time
         for (auto reps = 0; reps < repetitions / 10; reps++) {
-            for (auto snp = 1; snp < snp_count; snp++) {
+            for (size_t snp = 1; snp < snp_count; snp++) {
                 GenotypeTable<uint64_t>::combine_and_popcnt(
                     dataset[0], dataset[snp], ctable);
             }
@@ -86,7 +85,7 @@ void bench(const int tid, const std::string tped, const std::string tfam,
         // Measure time
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
         for (auto reps = 0; reps < repetitions; reps++) {
-            for (auto snp = 1; snp < snp_count; snp++) {
+            for (size_t snp = 1; snp < snp_count; snp++) {
                 GenotypeTable<uint64_t>::combine_and_popcnt(
                     dataset[0], dataset[snp], ctable);
             }
@@ -112,7 +111,7 @@ void bench(const int tid, const std::string tped, const std::string tfam,
         pthread_barrier_wait(&barrier);
         // Warmup CPU adding an extra 10% of iterations before measuring time
         for (auto reps = 0; reps < repetitions / 10; reps++) {
-            for (auto snp = order - 1; snp < snp_count; snp++) {
+            for (size_t snp = order - 1; snp < snp_count; snp++) {
                 GenotypeTable<uint64_t>::combine_and_popcnt(last, dataset[snp],
                                                             ctable);
             }
@@ -120,7 +119,7 @@ void bench(const int tid, const std::string tped, const std::string tfam,
         // Measure time
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
         for (auto reps = 0; reps < repetitions; reps++) {
-            for (auto snp = order - 1; snp < snp_count; snp++) {
+            for (size_t snp = order - 1; snp < snp_count; snp++) {
                 GenotypeTable<uint64_t>::combine_and_popcnt(last, dataset[snp],
                                                             ctable);
             }
@@ -153,12 +152,12 @@ int main(int argc, char *argv[])
     times.resize(thread_count);
 
     // Spawn thread_count - 1 threads
-    for (auto i = 1; i < affinity.size(); i++) {
-        threads.emplace_back(bench, i, tped, tfam, order, std::ref(times[i]),
+    for (size_t i = 1; i < affinity.size(); i++) {
+        threads.emplace_back(bench, tped, tfam, order, std::ref(times[i]),
                              affinity[i]);
     }
     // Also use current thread
-    bench(0, tped, tfam, order, times[0], affinity[0]);
+    bench(tped, tfam, order, times[0], affinity[0]);
 
     // Finalization
     // Wait for completion

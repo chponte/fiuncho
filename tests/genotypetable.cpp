@@ -190,12 +190,12 @@ TEST(GenotypeTableTest, fill)
 
     GenotypeTable<uint64_t>::combine(t1, t2, result);
 
-    for (auto i = 0; i < result.size; i++) {
-        for (auto j = 0; j < result.cases_words; j++) {
+    for (size_t i = 0; i < result.size; i++) {
+        for (size_t j = 0; j < result.cases_words; j++) {
             EXPECT_TRUE(result.cases[i * result.cases_words + j] ==
                         res_cases[i][j]);
         }
-        for (auto j = 0; j < result.ctrls_words; j++) {
+        for (size_t j = 0; j < result.ctrls_words; j++) {
             EXPECT_TRUE(result.ctrls[i * result.ctrls_words + j] ==
                         res_ctrls[i][j]);
         }

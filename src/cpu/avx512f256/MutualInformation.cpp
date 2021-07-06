@@ -59,7 +59,7 @@ float MutualInformation<float>::compute<uint32_t>(
     __m256i y0;
     __m256 y1, y2, y3, y4;
     __mmask8 mask1, mask2, mask3;
-    for (auto i = 0; i < table.size; i += 8) {
+    for (size_t i = 0; i < table.size; i += 8) {
         y0 = _mm256_load_si256((__m256i *)(table.cases + i));
         mask1 =
             _mm256_cmp_epi32_mask(y0, _mm256_setzero_si256(), _MM_CMPINT_NE);

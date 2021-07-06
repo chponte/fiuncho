@@ -81,7 +81,7 @@ template <class T> class Dataset
         populate(individuals, snps, alloc, d.table_vector, cases_words,
                  ctrls_words);
 
-        return std::move(d);
+        return d;
     }
 
     /**
@@ -118,7 +118,7 @@ template <class T> class Dataset
         populate(individuals, snps, ptr, d.table_vector, cases_words,
                  ctrls_words);
 
-        return std::move(d);
+        return d;
     }
 
     //@}
@@ -250,7 +250,7 @@ template <class T> class Dataset
         // Buffers
         T cases_buff[3], ctrls_buff[3];
         data.reserve(snps.size());
-        for (auto i = 0; i < snps.size(); i++) {
+        for (size_t i = 0; i < snps.size(); i++) {
             // Clear buffers
             for (auto k = 0; k < 3; k++) {
                 ctrls_buff[k] = 0;
@@ -265,7 +265,7 @@ template <class T> class Dataset
             // Populate bit table with the snp information
             size_t cases_cnt = 0;
             size_t ctrls_cnt = 0;
-            for (auto j = 0; j < inds.size(); j++) {
+            for (size_t j = 0; j < inds.size(); j++) {
                 // For each individual, check phenotype class
                 if (inds[j].ph == 1) { // If it's a control append genotype to
                     // the 3 control buffers

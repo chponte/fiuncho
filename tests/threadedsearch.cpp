@@ -30,10 +30,9 @@ TEST(ThreadedSearchTest, Main)
 {
     // Run ThreadedSearch
 #ifdef ALIGN
-    const Dataset<uint64_t> dataset =
-        Dataset<uint64_t>::read<ALIGN>(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read<ALIGN>(tped, tfam);
 #else
-    const Dataset<uint64_t> dataset = Dataset<uint64_t>::read(tped, tfam);
+    const auto dataset = Dataset<uint64_t>::read(tped, tfam);
 #endif
 
     std::vector<int> thread_count_vector{1, 32};

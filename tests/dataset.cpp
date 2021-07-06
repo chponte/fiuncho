@@ -49,10 +49,10 @@ TEST(DatasetTest, Dataset)
     EXPECT_EQ(21, dataset[0].ctrls_words);
 #endif
 
-    for (auto i = 0; i < dataset.snps; i++) {
-        int count = 0;
-        for (auto j = 0; j < 3; j++) {
-            for (auto w = 0; w < dataset[i].cases_words; w++) {
+    for (size_t i = 0; i < dataset.snps; i++) {
+        size_t count = 0;
+        for (size_t j = 0; j < 3; j++) {
+            for (size_t w = 0; w < dataset[i].cases_words; w++) {
                 count += std::bitset<64>(
                              dataset[i].cases[j * dataset[i].cases_words + w])
                              .count();
@@ -61,10 +61,10 @@ TEST(DatasetTest, Dataset)
         EXPECT_EQ(dataset.cases, count);
     }
 
-    for (auto i = 0; i < dataset.snps; i++) {
-        int count = 0;
-        for (auto j = 0; j < 3; j++) {
-            for (auto w = 0; w < dataset[i].ctrls_words; w++) {
+    for (size_t i = 0; i < dataset.snps; i++) {
+        size_t count = 0;
+        for (size_t j = 0; j < 3; j++) {
+            for (size_t w = 0; w < dataset[i].ctrls_words; w++) {
                 count += std::bitset<64>(
                              dataset[i].ctrls[j * dataset[i].ctrls_words + w])
                              .count();

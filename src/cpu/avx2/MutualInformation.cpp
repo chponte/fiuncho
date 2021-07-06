@@ -58,7 +58,7 @@ float MutualInformation<float>::compute<uint32_t>(
     __m256 y0, y1, y2, y3, y4, y5;
 
     __m256 h_x = _mm256_setzero_ps(), h_all = _mm256_setzero_ps();
-    for (auto i = 0; i < table.size; i += 8) {
+    for (size_t i = 0; i < table.size; i += 8) {
         y0 = _mm256_cvtepi32_ps(
             _mm256_load_si256((const __m256i *)(table.cases + i)));
         y3 = _mm256_mul_ps(y0, ii);

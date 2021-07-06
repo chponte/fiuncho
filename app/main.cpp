@@ -67,7 +67,7 @@ Arguments read_arguments(int argc, char **argv)
                 << std::endl;
         }
 
-        virtual void failure(TCLAP::CmdLineInterface &c, TCLAP::ArgException &e)
+        virtual void failure(TCLAP::CmdLineInterface &, TCLAP::ArgException &e)
         {
             throw e;
         }
