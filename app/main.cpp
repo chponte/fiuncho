@@ -29,6 +29,7 @@
 #include <fiuncho/ThreadedSearch.h>
 #include <fstream>
 #include <iostream>
+#include <linux/limits.h>
 #include <tclap/CmdLine.h>
 #include <unistd.h>
 
@@ -125,17 +126,47 @@ Arguments read_arguments(int argc, char **argv)
         {
             return "path points to a readable file";
         }
-    } file_constraint;
+    } infile_constraint;
     TCLAP::UnlabeledValueArg<std::string> tped(
         "tped", "Path to the input tped data file.", true, "",
-        &file_constraint);
+        &infile_constraint);
     cmd.add(tped);
     TCLAP::UnlabeledValueArg<std::string> tfam(
         "tfam", "Tath to the input tfam data file.", true, "",
-        &file_constraint);
+        &infile_constraint);
     cmd.add(tfam);
+    class : public TCLAP::Constraint<std::string>
+    {
+        bool check(const std::string &path) const
+        {
+            if (access(path.c_str(), F_OK) == 0) { // File exists
+                return access(path.c_str(), W_OK) == 0;
+            } else { // File does not exist
+                auto pos = path.find_last_of("/");
+                // If there are no forward slashes in the path, the path points
+                // to a file in the current directory
+                if (pos == std::string::npos) {
+                    char current_path[PATH_MAX + 1];
+                    if (getcwd(current_path, PATH_MAX + 1) == nullptr) {
+                        return false;
+                    }
+                    return access(current_path, W_OK) == 0;
+                } else {
+                    std::string parent_dir = path.substr(0, pos);
+                    return access(parent_dir.c_str(), W_OK) == 0;
+                }
+            }
+        }
+
+        std::string shortID() const { return "path"; }
+
+        std::string description() const
+        {
+            return "path points to a writeable location";
+        }
+    } outfile_constraint;
     TCLAP::UnlabeledValueArg<std::string> output(
-        "output", "Path to the output file.", true, "", &file_constraint);
+        "output", "Path to the output file.", true, "", &outfile_constraint);
     cmd.add(output);
     // Read
     Arguments args;
