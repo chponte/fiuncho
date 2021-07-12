@@ -30,12 +30,10 @@
 #include <fiuncho/algorithms/MutualInformation.h>
 #include <fiuncho/dataset/Dataset.h>
 #include <fiuncho/utils/MaxArray.h>
+#include <iostream>
+#include <pthread.h>
 #include <thread>
 #include <vector>
-
-#ifdef BENCHMARK
-#include <iostream>
-#endif
 
 #define BLOCK_SIZE (int)(16384 / powf(3, args.order - 2))
 
@@ -76,7 +74,11 @@ class ThreadedSearch : public Search
     static void thread_main(Args &args)
     {
 #ifdef BENCHMARK
-        auto start_time = std::chrono::high_resolution_clock::now();
+        struct timespec ts;
+        if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == -1) {
+            throw std::runtime_error("Error while CLOCK_THREAD_CPUTIME_ID");
+        }
+        double start_time = ts.tv_sec + ts.tv_nsec * 1e-9;
 #endif
         if (args.order == 2) {
             search_order_2(args);
@@ -84,8 +86,10 @@ class ThreadedSearch : public Search
             search_order_gt_2(args);
         }
 #ifdef BENCHMARK
-        auto time_diff = std::chrono::high_resolution_clock::now() - start_time;
-        args.elapsed_time = std::chrono::duration<double>(time_diff).count();
+        if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == -1) {
+            throw std::runtime_error("Error while CLOCK_THREAD_CPUTIME_ID");
+        }
+        args.elapsed_time = ts.tv_sec + ts.tv_nsec * 1e-9 - start_time;
 #endif
     }
 
